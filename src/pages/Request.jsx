@@ -121,56 +121,62 @@ export default function Request() {
       toast.error(error.message || "حدث خطأ أثناء تنزيل الملف");
     }
   };
+ 
+  const [pageNumber, setPageNumber] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  
 
   // مذكرة لوظيفة جلب الطلبات لتجنب إعادة الإنشاء      Get All Member Requests
-  const memoizedFetchRequests = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setFetchError(null);
-      const token = localStorage.getItem('token');
-      localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTk1NDQzOS04MDExLTdjY2EtOWE3Ny1jNWM1Njk5MGJlMzYiLCJlbWFpbCI6IkFkbWluQEdvdmVybm1lbnRTZXJ2aWNlcy5jb20iLCJnaXZlbl9uYW1lIjoiR292ZXJubWVudF9TZXJ2aWNlcyIsImZhbWlseV9uYW1lIjoiQWRtaW4iLCJqdGkiOiJlYTVmMzY4Zi00M2VkLTRjZDgtYmNiOC02ZWU1N2Q1YzZkNzYiLCJyb2xlcyI6WyJBZG1pbiJdLCJwZXJtaXNzaW9ucyI6WyJBY2NvdW50X01hbmdtZW50IiwiYWRtaW4uY3JlYXRlX3Jlc3BvbnNlIiwiYXV0aC5hZG1pbi5sb2dpbiIsImF1dGguYWRtaW4ucmVnaXNzaW9ucyIsImF1dGguYWRtaW4ucmVzZW5kZF9jb25maXJtX2VtYWlsIiwicmVzdWx0czpyZWFkIiwicm9sZXM6YWRkIiwicm9sZXM6cmVhZCIsInJvbGVzOnVwZGF0ZSIsInNlcnZpY2VzLmNyZWF0ZSIsInNlcnZpY2VzLnRvZ2dsZV9hdmFpbGFiaWxpdHkiLCJzZXJ2aWNlcy51cGRhdGUiLCJzZXJ2aWNlcy52aWV3X2FsbCIsInVzZXJzOmFkZCIsInVzZXJzOnJlYWQiLCJ1c2Vyczp1cGRhdGUiXSwiZXhwIjoxNzQ2MjQwNzg5LCJpc3MiOiJDZW50cmFsVXNlck1hbmFnZW1lbnRTZXJ2aWNlIiwiYXVkIjoiQ2VudHJhbFVzZXJNYW5hZ2VtZW50U2VydmljZSJ9.k4DpCZWTPIxM1N071KG9IFeov8EI57XH0XBcjbnADMs');
+  const memoizedFetchRequests = useCallback(async (page = 1) => {
+  try {
+    setIsLoading(true);
+    setFetchError(null);
 
-      const response = await fetch('https://government-services.runasp.net/api/Requests/All', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+    const token = localStorage.getItem('token');
+    const response = await fetch(`https://government-services.runasp.net/api/Requests/All?pageNumber=${page}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    
+    const data = await response.json();
 
-      const data = await response.json();
-      console.log("Raw API Response:", data);
+    const formattedData = Array.isArray(data) ? data : (data.items || []);
 
-      const formattedData = Array.isArray(data) ? data : (data.items || []);
-      console.log("Formatted Data:", formattedData);
+    const sortedData = formattedData
+      .filter(request => request !== null)
+      .map(request => ({
+        id: request.requestId,
+        serviceName: request.serviceName || 'خدمة غير معروفة',
+        requestDate: request.requestDate
+          ? new Date(request.requestDate).toLocaleDateString('ar-EG')
+          : 'تاريخ غير معروف',
+        requestStatus: mapStatusToArabic(request.requestStatus || 'Pending'),
+        adminComment: request.adminComment || '',
+        fullName: `${request.firstName || ''} ${request.lastName || ''}`.trim(),
+        fieldValueString: request.fieldValueString || ''
+      }))
+      .sort((a, b) => a.id - b.id);
 
-      const sortedData = formattedData
-        .filter(request => request !== null)
-        .map(request => ({
-          id: request.requestId ,
-          serviceName: request.serviceName || 'خدمة غير معروفة',
-          requestDate: request.requestDate ? new Date(request.requestDate).toLocaleDateString('ar-EG') : 'تاريخ غير معروف',
-          requestStatus: mapStatusToArabic(request.requestStatus || 'Pending'),
-          adminComment: request.adminComment || '',
-          // fields: request.firstName || [],
-          // files: request.lastName || [],
-          fullName : `${request.firstName || ''} ${request.lastName || ''}`.trim(),
-          fieldValueString: request.fieldValueString || ''
-        }))
-        .sort((a, b) => a.id - b.id); // ترتيب حسب الرقم التسلسلي
+    setRows(sortedData);
+    setPageNumber(data.pageNumber);
+    setTotalPages(data.totalPages);
 
-      console.log("Final Sorted Data:", sortedData);
-      setRows(sortedData);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
-      setFetchError("حدث خطأ في جلب البيانات من الخادم");
-      // toast.error("حدث خطأ في جلب البيانات من الخادم");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  } catch (error) {
+    console.error("Error fetching requests:", error);
+    setFetchError("حدث خطأ في جلب البيانات من الخادم");
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
+
+  useEffect(() => {
+      memoizedFetchRequests(pageNumber);
+  }, [pageNumber, memoizedFetchRequests]);
 
   const handleRefuseDialogOpen = () => {
     setRefuseDialogOpen(true);
@@ -469,32 +475,20 @@ export default function Request() {
             </TableContainer>
             <Stack spacing={2} alignItems="center" sx={{ mt: 3, mb: 3 }}>
               <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <Pagination
-                count={Math.ceil(rows.length / rowsPerPage)}
-                page={page}
-                onChange={(event, newPage) => setPage(newPage)}
-                color="primary"
-                size="large"
-                sx={{
-                  '& .MuiPaginationItem-root': {
-                    fontSize: '1.1rem',
-                    '&:hover': {
-                      backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                    },
-                  },
-                  '& .Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                  },
-                }}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+                <Pagination
+                  count={totalPages}               // عدد الصفحات الكلي
+                  page={pageNumber}                // الصفحة الحالية
+                  onChange={(event, value) => setPageNumber(value)}  // تغيير الصفحة
+                  color="primary"
+                  shape="rounded"
+                  size="large"
+                  showFirstButton
+                  showLastButton
+                />
               </motion.div>
             </Stack>
           </div>

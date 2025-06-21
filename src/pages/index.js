@@ -9,4 +9,4 @@ export { default as Login } from './Login';
 export { default as Auth } from './Login'
 export { default as Request } from './Request';
 export { default as AdminDashboard } from './AdminDashboard';
-export { default as AdminServices } from './adminServices'
+export { default as AdminServices } from './admin-services';
