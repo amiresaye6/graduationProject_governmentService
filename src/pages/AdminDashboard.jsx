@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { HeaderTemp } from "../Components";
+import { HeaderTemp , DashboardServicesStats } from "../Components";
 import { useAuth } from "../Components/AuthContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -63,43 +63,6 @@ import {
   Legend
 } from 'recharts';
 
-const generateFakeRequestData = () => {
-  return [
-    { month: 'Jan', requests: 65 },
-    { month: 'Feb', requests: 77 },
-    { month: 'Mar', requests: 89 },
-    { month: 'Apr', requests: 81 },
-    { month: 'May', requests: 95 },
-    { month: 'Jun', requests: 88 },
-    { month: 'Jul', requests: 102 },
-    { month: 'Aug', requests: 86 },
-    { month: 'Sep', requests: 93 },
-    { month: 'Oct', requests: 109 },
-    { month: 'Nov', requests: 97 },
-    { month: 'Dec', requests: 89 }
-  ];
-};
-
-// Tab Panel Component
-function TabPanel(props) {
-    const { children, value, index, ...other } = props;
-
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`admin-tabpanel-${index}`}
-            aria-labelledby={`admin-tab-${index}`}
-            {...other}
-        >
-            {value === index && (
-                <Box sx={{ p: 3 }}>
-                    {children}
-                </Box>
-            )}
-        </div>
-    );
-}
 
 function AdminDashboard() {
     // State for dashboard data
@@ -109,7 +72,7 @@ function AdminDashboard() {
         newRequests: 0,
         inProgressRequests:0,
         completedRequests: 0,
-        totalPayments:0
+       
     });
 
     useEffect(() => { 
@@ -121,7 +84,7 @@ function AdminDashboard() {
                     newRequests: response.data.totalServices,
                     inProgressRequests: response.data.approvedRequests,
                     completedRequests: response.data.rejectedRequests,
-                    totalPayments : response.data.totalPayments
+                    
                 });
             } catch (error) {
                 console.error('Error fetching dashboard stats:', error);
@@ -131,27 +94,41 @@ function AdminDashboard() {
     }, []);
 
     // Column definitions for the requests table
-    const columns = [
-        { id: 'requestId', label: 'رقم الطلب', minWidth: 100 },
-        { id: 'userName', label: 'المستخدم', minWidth: 170 },
-        { id: 'serviceName', label: 'الخدمة', minWidth: 170 },
-        { id: 'submissionDate', label: 'تاريخ التقديم', minWidth: 170 },
-        { id: 'status', label: 'الحالة', minWidth: 130 },
-    ];
 
-    // Dummy requests data
-    const [requests] = useState([
-        { id: 1, requestId: 'REQ001', userName: 'أحمد محمد', serviceName: 'تجديد رخصة', status: 'قيد المراجعة', submissionDate: '2025-05-10' },
-        { id: 2, requestId: 'REQ002', userName: 'سارة أحمد', serviceName: 'استخراج بطاقة', status: 'تمت الموافقة', submissionDate: '2025-05-09' },
-        { id: 3, requestId: 'REQ003', userName: 'محمد علي', serviceName: 'تصريح عمل', status: 'مرفوض', submissionDate: '2025-05-08' }
-    ]);
+useEffect(() => {
+    const fetchData = async () => {    
+      try {
+        const response = await axiosInstance.get(
+          '/Dashboard/requests_Per_Month');
+        // تحويل رقم الشهر إلى اسم الشهر
+        const months = [
+          '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+          'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+        ];
+
+        const formatted = response.data.map(item => ({
+          month: months[item.month],
+          count: item.count
+        }));
+
+        setData(formatted);
+      } catch (error) {
+        console.error('حدث خطأ في جلب البيانات:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+}, []);
+   
 
     // UI State
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    
+    const [data, setData] = useState([]); // Data for the chart
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
@@ -166,43 +143,12 @@ function AdminDashboard() {
         setPage(0);
     };
 
-    // Get status color for chip
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'تمت الموافقة':
-                return 'success';
-            case 'مرفوض':
-                return 'error';
-            case 'قيد المراجعة':
-                return 'warning';
-            default:
-                return 'default';
-        }
-    };
-
     // Check authentication
     useEffect(() => {
         if (!isAuthenticated) {
             navigate('/');
         }
     }, [isAuthenticated, navigate]);
-
-    // Handle tab change
-    const handleTabChange = (event, newValue) => {
-        setTabValue(newValue);
-    };
-
-     const [data, setData] = useState([]);
-//   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate API delay
-    setTimeout(() => {
-      const fakeData = generateFakeRequestData();
-      setData(fakeData);
-      setLoading(false);
-    }, 1000);
-  }, []);
 
     const [services, setServices] = useState([]);
     useEffect(() => {
@@ -221,21 +167,26 @@ function AdminDashboard() {
         <Box sx={{ flexGrow: 1 }}>
             <HeaderTemp />
             <Box sx={{ p: 3 }}>
-                <Grid container spacing={3} >
+                <Grid container spacing={3} mb={4}  > 
                     {/* Stats Cards */}
-                    <Grid item xs={12} sm={6} md={4} lg={4}>
+                    <Grid item xs={12} sm={6}    md={2} lg={3} >
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
                         >
-                            <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3  }}>
+                            <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3, boxShadow: 1, border: '1px solid',borderColor: 'grey.300', 
+                                transition: 'box-shadow 0.3s ease',
+                                '&:hover': {
+                                boxShadow: 3             // زي shadow-md
+                                }
+                                 }}>
                                 <Avatar sx={{mr:'2' , bgcolor:'#f3e5f5' , color:'#000'}}>
                                      <PeopleIcon />
                                 </Avatar>
                                 <CardHeader 
                                     title="إجمالي الطلبات" 
-                                    titleTypographyProps={{ align: 'center' }}
+                                    titleTypographyProps={{ align: 'center', noWrap: true }}
                                    variant="body2" color="textSecondary"
                                 />
                                 <CardContent>
@@ -247,20 +198,26 @@ function AdminDashboard() {
                         </motion.div>
                     </Grid>
 
-                    <Grid item xs={12} sm={6} md={4} lg={4}>
+                    <Grid item xs={12} sm={6} md={4} lg={3}>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.2 }}
                         >
-                            <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3  }}>
-                                <Avatar sx={{  color: '#7b61ff', bgcolor: '#f3edff', p: 1 }} >
+                            <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3, boxShadow: 1, border: '1px solid',borderColor: 'grey.300', 
+                                transition: 'box-shadow 0.3s ease',
+                                '&:hover': {
+                                boxShadow: 3             // زي shadow-md
+                                }
+                                 }}>
+                                <Avatar sx={{mr:'2' , color: '#7b61ff', bgcolor: '#f3edff'}} >
                                      <DesignServicesIcon />
                                 </Avatar>
                                 <CardHeader 
-                                    title="الخدمات المتاحه " 
-                                    titleTypographyProps={{ align: 'center' }}
-                                    variant="body2" color="textSecondary"
+                                    title=" الخدمات المتاحه" 
+                                    titleTypographyProps={{ align: 'center', noWrap: true  }}
+                                    variant="body2"   color="textSecondary"
+                                     
                                 />
                                 <CardContent>
                                     <Typography variant="h5" fontWeight="bold">
@@ -271,13 +228,18 @@ function AdminDashboard() {
                         </motion.div>
                     </Grid>
 
-                    <Grid item xs={12} sm={6} md={4} lg={4}>
+                    <Grid item xs={12} sm={6} md={4} lg={3}>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.4 }}
                         >
-                           <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3  }}>
+                           <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3, boxShadow: 1, border: '1px solid',borderColor: 'grey.300', 
+                                transition: 'box-shadow 0.3s ease',
+                                '&:hover': {
+                                boxShadow: 3             // زي shadow-md
+                                }
+                                 }}>
                                 <Avatar sx={{mr:'2' , bgcolor:'#e8f5e9' , color:'green'}}>
                                       <CheckCircleIcon />
                                 </Avatar>
@@ -294,14 +256,19 @@ function AdminDashboard() {
                             </Card>
                         </motion.div>
                     </Grid>
-
-                    <Grid item xs={12} sm={6} md={4} lg={4}>
+                    
+                    <Grid item xs={12} sm={6} md={4} lg={3}>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.6 }}
                         >
-                            <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3  }}>
+                            <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3, boxShadow: 1, border: '1px solid',borderColor: 'grey.300', 
+                                transition: 'box-shadow 0.3s ease',
+                                '&:hover': {
+                                boxShadow: 3             // زي shadow-md
+                                }
+                                 }}>
                                 <Avatar sx={{  color: '#e74c3c', bgcolor: '#fdecea', p: 1}}>
                                      <CancelIcon />
                                 </Avatar>
@@ -319,31 +286,9 @@ function AdminDashboard() {
                         </motion.div>
                     </Grid>
 
-                     <Grid item xs={12} sm={6} md={4} lg={4}>
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.6 }}
-                        >
-                            <Card elevation={2}  sx={{ p: 3, display: 'flex', alignItems: 'center', borderRadius: 3  }}>
-                                <Avatar sx={{  color: '#2ecc71', bgcolor: '#eafaf1', p: 1 }}>
-                                    <PaidIcon  />
-                                </Avatar>
-                                <CardHeader 
-                                    title="اجمالي المدفوعات" 
-                                    titleTypographyProps={{ align: 'center' }}
-                                    variant="body2" color="textSecondary"
-                                />
-                                <CardContent>
-                                    <Typography variant="h5" fontWeight="bold">
-                                        {DashboardStats.totalPayments}
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    </Grid>
-                </Grid>
 
+                </Grid>
+                 <DashboardServicesStats />
                 <Card   elevation={3} sx={{ borderRadius: 3, mt: 4, p: 3 }}>
                      <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -370,7 +315,7 @@ function AdminDashboard() {
                                 <YAxis />
                                 <Tooltip cursor={{ fill: 'transparent' }}/>
                                 <Legend />
-                                <Bar dataKey="requests" fill="#64b5f6" radius={[4, 4, 4, 4]} activeBar={{ fill: '#1e88e5' }} />
+                                <Bar dataKey="count" fill="#64b5f6" radius={[4, 4, 4, 4]} activeBar={{ fill: '#1e88e5' }} />
                                 </BarChart>
                             </ResponsiveContainer>
                             )}

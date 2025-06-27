@@ -3,7 +3,8 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText,
   DialogTitle, CircularProgress, Box, Typography, List, ListItem, ListItemText,
-  TextField, InputAdornment, Pagination, Stack
+  TextField, InputAdornment, Pagination, Stack,
+  Grid
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { Close as CloseIcon } from '@mui/icons-material';
@@ -13,16 +14,7 @@ import { HeaderTemp } from '../Components';
 import { motion } from "framer-motion";
 
 export default function Request() {
-  // بيانات وهمية للطلبات (محتفظ بها كتعليق للرجوع إليها عند الحاجة)
-  /*
-  const dummyRows = [
-    { id: 1, serviceName: 'استخراج بطاقة هوية وطنية', requestDate: '2023-06-15', status: 'قيد الانتظار' },
-    { id: 2, serviceName: 'تجديد جواز السفر', requestDate: '2023-06-16', status: 'مقبول' },
-    { id: 3, serviceName: 'استخراج رخصة قيادة', requestDate: '2023-06-17', status: 'مرفوض' },
-    { id: 4, serviceName: 'تسجيل مركبة جديدة', requestDate: '2023-06-18', status: 'قيد الانتظار' },
-    { id: 5, serviceName: 'استخراج شهادة ميلاد', requestDate: '2023-06-19', status: 'قيد الانتظار' },
-  ];
-  */
+ 
  // State hooks
   const [rows, setRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -416,7 +408,7 @@ export default function Request() {
 
         {!isLoading && !fetchError && rows.length === 0 && (
           <Box sx={{ textAlign: 'center', my: 2 }}>
-            <Typography>لا توجد طلبات لعرضها</Typography>
+            <Typography className='title'>لا توجد طلبات لعرضها</Typography>
           </Box>
         )}
         <motion.div
@@ -428,7 +420,7 @@ export default function Request() {
         {!isLoading && !fetchError && rows.length > 0 && (
           <div>
             <TableContainer component={Paper}>
-              <Table sx={{ minWidth: 650 }} aria-label="الطلبات">
+              <Table  sx={{ minWidth: 650 }} aria-label="الطلبات">
               <TableHead>
                 <TableRow>
                   <TableCell align="right">رقم الطلب</TableCell>
@@ -495,190 +487,206 @@ export default function Request() {
         )}
         </motion.div> 
       </div>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        scroll={scroll}
-        aria-labelledby="scroll-dialog-title"
-        aria-describedby="scroll-dialog-description"
-        maxWidth="md"
-        fullWidth
-      >
-        {selectedRequest && (
-          <>
-            <DialogTitle id="scroll-dialog-title">
-              تفاصيل الطلب: {selectedRequest.serviceName}
-              <CloseIcon
-                onClick={handleClose}
-                sx={{
-                  position: 'absolute',
-                  left: 30,
-                  top: 19,
-                  cursor: 'pointer'
-                }}
-              />
-            </DialogTitle>
-            <DialogContent dividers={scroll === 'paper'}>
-              <DialogContentText
-                id="scroll-dialog-description"
-                ref={descriptionElementRef}
-                tabIndex={-1}
-              >
-                {loading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                    <CircularProgress />
-                  </Box>
-                ) : (
-                  <>
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="h6" gutterBottom>
-                        معلومات الطلب
-                      </Typography>
-                      <Typography variant="body1">
-                        <strong>رقم الطلب:</strong> {selectedRequest.requestId}
-                      </Typography>
-                      <Typography variant="body1">
-                        <strong>اسم الخدمة:</strong> {selectedRequest.serviceName}
-                      </Typography>
-                      <Typography variant="body1">
-                        <strong>تاريخ الطلب:</strong> {selectedRequest.requestDate}
-                      </Typography>
-                      <Typography variant="body1">
-                        <strong>حالة الطلب:</strong>
-                        <Chip
-                          label={selectedRequest.requestStatus}
-                          color={getStatusColor(selectedRequest.requestStatus)}
-                          variant="outlined"
-                          size="small"
-                          sx={{ mx: 1 }}
-                        />
-                      </Typography>
-                    </Box>
-
-                    {/* حقل إدخال ملاحظات الأدمن */}
-                    {(selectedRequest.requestStatus === 'مرفوض') && (
-                      <Box sx={{ mb: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                          ملاحظات الإدارة
-                        </Typography>
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={4}
-                          variant="outlined"
-                          value={adminComment}
-                          onChange={(e) => setAdminComment(e.target.value)}
-                          placeholder="أدخل ملاحظاتك هنا..."
-                          sx={{ mb: 2 }}
-                        />
-                      </Box>
-                    )}
-
-                    {/* عرض البيانات المرفقة */}
-                    {requestFields.length > 0 && (
-                      <Box sx={{ mb: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                          البيانات المرفقة
-                        </Typography>
-                        <TableContainer component={Paper}>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell align="right">اسم الحقل</TableCell>
-                                <TableCell align="right">القيمة</TableCell>
-                                <TableCell align="right">نوع البيانات</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {requestFields.map((field) => (
-                                <TableRow key={field.fieldId}>
-                                  <TableCell align="right">{field.filedName}</TableCell>
-                                  <TableCell align="right">{processFieldValue(field)}</TableCell>
-                                  <TableCell align="right" sx={{ color: 'text.secondary' }}>
-                                    {field.htmlType || field.valueType || 'نص'}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      </Box>
-                    )}
-
-                    {/* عرض الملفات المرفقة */}
-                    {requestFiles.length > 0 && (
-                      <Box sx={{ mb: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                          الملفات المرفقة
-                        </Typography>
-                        <List>
-                          {requestFiles.map((file) => (
-                            <ListItem key={file.id}>
-                              <ListItemText
-                                primary={file.fileName}
-                                secondary={`النوع: ${file.contentType} | الامتداد: ${file.fileExtension}`}
-                              />
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                onClick={() => downloadFile(file.id)}
-                                startIcon={<DownloadIcon />}
-                              >
-                                تحميل
-                              </Button>
-                            </ListItem>
-                          ))}
-                        </List>
-                      </Box>
-                    )}
-
-                    {/* رسالة في حالة عدم وجود بيانات أو ملفات */}
-                    {requestFields.length === 0 && requestFiles.length === 0 && (
-                      <Typography variant="body1" color="text.secondary" align="center" sx={{ my: 3 }}>
-                        لا توجد بيانات أو ملفات مرفقة لهذا الطلب
-                      </Typography>
-                    )}
-
-                    {error && (
-                      <Typography variant="body1" color="error" align="center" sx={{ my: 2 }}>
-                        {error}
-                      </Typography>
-                    )}
-                  </>
-                )}
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              {selectedRequest && selectedRequest.requestStatus === 'قيد الانتظار' && (
-                <>
-                  <Button
+ <Dialog
+  open={open}
+  onClose={handleClose}
+  scroll={scroll}
+  aria-labelledby="scroll-dialog-title"
+  aria-describedby="scroll-dialog-description"
+  maxWidth="md"
+  fullWidth
+>
+  {selectedRequest && (
+    <>
+      <DialogTitle id="scroll-dialog-title" sx={{ fontWeight: 'bold', fontSize: '1.25rem', pb: 0 }}>
+        تفاصيل الطلب
+        <CloseIcon
+          onClick={handleClose}
+          sx={{ position: 'absolute', left: 30, top: 19, cursor: 'pointer' }}
+        />
+      </DialogTitle>
+      <DialogContent dividers={scroll === 'paper'}>
+        <DialogContentText
+          id="scroll-dialog-description"
+          ref={descriptionElementRef}
+          tabIndex={-1}
+          component="div"
+        >
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box>
+              {/* Service Info */}
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom color='black'>
+                معلومات الطلب
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}  >
+                <Grid item xs={6} >
+                  <Typography variant="body2" color="text.secondary">
+                    اسم الخدمة :
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold" color='black'>
+                    {selectedRequest.serviceName}
+                  </Typography>
+                </Grid>
+                <Grid item xs={3} textAlign="right" mr={6} >
+                  <Typography variant="body2" color="text.secondary">
+                    رقم الطلب :
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold" color='black'>
+                    {selectedRequest.requestId}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    تاريخ الطلب :
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold" color='black'>
+                    {selectedRequest.requestDate}
+                  </Typography>
+                </Grid>
+                <Grid item xs={3}  textAlign="right" mr={6} >
+                  <Typography variant="body2" color="text.secondary">
+                    الحالة :
+                  </Typography>
+                  <Chip 
+                    label={selectedRequest.requestStatus}
+                    color={getStatusColor(selectedRequest.requestStatus)}
                     size="small"
-                    color="success"
-                    variant="contained"
-                    onClick={() => updateRequestStatus(selectedRequest.id, 'مقبول')}
-                    disabled={loading}
-                    style={{ marginLeft: 5 }}
-                  >
-                    {loading ? <CircularProgress size={24} /> : 'قبول'}
-                  </Button>
-                  <Button
-                    size="small"
-                    color="error"
-                    variant="contained"
-                    onClick={handleRefuseDialogOpen}
-                    disabled={loading}
-                  >
-                    {loading ? <CircularProgress size={24} /> : 'رفض'}
-                  </Button>
-                </>
+                    sx={{ mt: 0.5 }}
+                  />
+                </Grid>
+              </Grid>
+
+              {/* Admin Notes */}
+              {selectedRequest.requestStatus === 'مرفوض' && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    ملاحظات الإدارة
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    variant="outlined"
+                    value={adminComment}
+                    onChange={(e) => setAdminComment(e.target.value)}
+                    placeholder="أدخل ملاحظاتك هنا..."
+                    sx={{ mb: 2 }}
+                  />
+                </Box>
               )}
-              <Button onClick={handleClose} color="primary">
-                إغلاق
-              </Button>
-            </DialogActions>
-          </>
+
+              {/* Request Fields */}
+              {requestFields.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    البيانات المرفقة
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell align="right">اسم الحقل</TableCell>
+                          <TableCell align="right">القيمة</TableCell>
+                          <TableCell align="right">نوع البيانات</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {requestFields.map((field) => (
+                          <TableRow key={field.fieldId}>
+                            <TableCell align="right">{field.filedName}</TableCell>
+                            <TableCell align="right">{processFieldValue(field)}</TableCell>
+                            <TableCell align="right" sx={{ color: 'text.secondary' }}>
+                              {field.htmlType || field.valueType || 'نص'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+
+              {/* Attached Files */}
+              {requestFiles.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    الملفات المرفقة
+                  </Typography>
+                  <List>
+                    {requestFiles.map((file) => (
+                      <ListItem key={file.id} secondaryAction={
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => downloadFile(file.id)}
+                          startIcon={<DownloadIcon />}
+                        >
+                          تحميل
+                        </Button>
+                      }>
+                        <ListItemText
+                          primary={file.fileName}
+                          secondary={`النوع: ${file.contentType} | الامتداد: ${file.fileExtension}`}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
+
+              {(requestFields.length === 0 && requestFiles.length === 0) && (
+                <Typography variant="body2" color="text.secondary" align="center" sx={{ my: 3 }}>
+                  لا توجد بيانات أو ملفات مرفقة لهذا الطلب
+                </Typography>
+              )}
+
+              {error && (
+                <Typography variant="body2" color="error" align="center" sx={{ my: 2 }}>
+                  {error}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContentText>
+      </DialogContent>
+
+      {/* Actions */}
+      <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
+        <Button onClick={handleClose} variant="outlined">
+          إغلاق
+        </Button>
+        {selectedRequest && (
+          <Box>
+            <Button
+              size="small"
+              color="error"
+              variant="contained"
+              onClick={handleRefuseDialogOpen}
+              disabled={loading}
+              sx={{ mx: 1 }}
+            >
+              {loading ? <CircularProgress size={20} /> : 'رفض'}
+            </Button>
+            <Button
+              size="small"
+              color="success"
+              variant="contained"
+              onClick={() => updateRequestStatus(selectedRequest.id, 'مقبول')}
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={20} /> : 'قبول'}
+            </Button>
+          </Box>
         )}
-      </Dialog>
+      </DialogActions>
+    </>
+  )}
+</Dialog>
+
 
       {/* Refuse Dialog */}
       <Dialog

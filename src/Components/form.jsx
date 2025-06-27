@@ -32,6 +32,7 @@ const DynamicForm = () => {
     const fetchData = async () => {
       try {
         setIsDataLoading(true);
+        const token = localStorage.getItem('token');
 
         // تحضير الهيدرز مع التوكن
         const headers = {
@@ -42,7 +43,9 @@ const DynamicForm = () => {
           `https://government-services.runasp.net/api/Fields/Required/Service/${serviceId}`,
           {
             method: "GET",
-            headers: headers,
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
           }
         );
 
@@ -56,11 +59,15 @@ const DynamicForm = () => {
         console.log("Fields Data:", fieldsData);
         setFormSchema(fieldsData);
         // جلب المستندات المطلوبة للخدمة
-        const docsResponse = await fetch(
+
+           
+          const docsResponse = await fetch(
           `https://government-services.runasp.net/api/Files/Required/Service/${serviceId}`,
           {
             method: "GET",
-            headers: headers,
+             headers: {
+                'Authorization': `Bearer ${token}`
+              },
           }
         );
 

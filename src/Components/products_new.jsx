@@ -53,14 +53,16 @@ function Products() {
                 };
 
                 // إضافة التوكن إذا كان موجوداً
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
+                // if (token) {
+                //     headers['Authorization'] = `Bearer ${token}`;
+                // }
 
                 console.log("Fetching services with headers:", headers);
                 const response = await fetch('https://government-services.runasp.net/api/Services/Available', {
                     method: 'GET',
-                    headers: headers,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     mode: 'cors',
                     // credentials: 'include'
                 });

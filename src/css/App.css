@@ -17,13 +17,13 @@
   /* Background Colors - Used for page backgrounds and cards */
   --background-default: #f8fafc; /* Main page background - light gray */
   --background-paper: #ffffff; /* Card and modal backgrounds - white */
-  --background-overlay: rgba(248, 250, 252, 0.291); /* Semi-transparent overlay */
+  --background-overlay: rgba(248, 250, 252, 0.95); /* Semi-transparent overlay */
   
   /* Text Colors - Used for all text content */
   --text-primary: #1f2937; /* Main text color - dark gray */
   --text-secondary: #6b7280; /* Secondary text - medium gray */
   --text-disabled: #9ca3af; /* Disabled text - light gray */
-  --text-light: #ababab; /* Light text for dark backgrounds */
+  --text-light: #000; /* Light text for dark backgrounds */
   --text-muted: #9ca3af; /* Muted text color */
   
   /* Status Colors - Used for alerts, notifications, and status indicators */
@@ -180,7 +180,7 @@ body {
 }
 /* profile style */
   /* Button styles */
-        /* .btn {
+        .btn {
           background: none;
           border: none;
           cursor: pointer;
@@ -196,7 +196,7 @@ body {
         .btn:hover {
           background-color: var(--bg-secondary);
           color: var(--accent-color);
-        } */
+        }
 
         .btn-edit {
           color: var(--text-muted);
@@ -556,7 +556,21 @@ body {
   text-decoration: underline;
 }
 
+/* Button Outline Styles */
+.btn-outline {
+  border: 1px solid var(--primary-main);
+  color: var(--primary-main);
+  background-color: transparent;
+  transition: all 0.3s ease;
+}
 
+.btn-outline.btn-active,
+.btn-outline:active,
+.btn-outline:hover {
+  background-color: var(--primary-main);
+  color: var(--primary-contrast-text);
+  border-color: var(--primary-main);
+}
 
 .title {
   color: var(--primary-main);
