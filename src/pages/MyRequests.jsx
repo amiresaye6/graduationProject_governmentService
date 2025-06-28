@@ -315,6 +315,7 @@ import axiosInstance from './axiosConfig'; // Adjust the import path as necessar
 import DownloadIcon from '@mui/icons-material/Download';
 import { motion } from 'framer-motion';
 import { HeaderTemp } from '../Components';
+import Scroll from '../Components/scroll';
 
 const statusColors = {
   Pending: 'warning',
@@ -408,6 +409,10 @@ const MyRequests = () => {
   return (
     <>
     <HeaderTemp/>
+    <div style={{backgroundColor:'var(--background-default)', minHeight: '100vh' , maxWidth: '100vw', width: '100%', overflow: 'hidden',
+    display: 'flex',
+    justifyContent: 'center',    alignItems: 'center'}} >
+      <div className="container my-5" style={{backgroundColor:'var(--background-paper)',boxShadow: '4px 8px 20px var(--shadow-medium)',borderRadius: '12px'}} >
     <Box p={3} dir="rtl">
       <Typography className='title' variant="h5" mb={2} fontWeight="bold">
         طلباتي
@@ -419,25 +424,25 @@ const MyRequests = () => {
         value={statusFilter}
         onChange={(e) => setStatusFilter(e.target.value)}
         sx={{
-    width: 220,
-    height: 48,
-    fontWeight: 'bold',
-    borderRadius: '12px',
-    backgroundColor: '#fff',
-    mb: 2,
-    '& .MuiOutlinedInput-root': {
-      borderRadius: '12px',
-    },
-    '& .MuiOutlinedInput-input': {
-      fontWeight: 'bold',
-      fontSize: '16px',
-      padding: '10px',
-    },
-  
-    '& .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#ccc',
-    }
-  }}
+          width: 220,
+          height: 48,
+          fontWeight: 'bold',
+          borderRadius: '12px',
+          backgroundColor: '#fff',
+          mb: 2,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '12px',
+          },
+          '& .MuiOutlinedInput-input': {
+            fontWeight: 'bold',
+            fontSize: '16px',
+            padding: '10px',
+          },
+        
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#ccc',
+          }
+        }}
       >
         {['الكل', 'Pending', 'Completed', 'Rejected'].map((status) => (
           <MenuItem key={status} value={status}>
@@ -446,7 +451,7 @@ const MyRequests = () => {
         ))}
       </TextField>
 
-      <TableContainer component={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} component ={Paper}>
+      <TableContainer component={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} >
         <Table>
           <TableHead>
             
@@ -492,6 +497,7 @@ const MyRequests = () => {
       />
     </Box>
       </TableContainer>
+    
 
       <Dialog open={Boolean(selectedRequest)} onClose={() => setSelectedRequest(null)} fullWidth maxWidth="md">
         <DialogTitle>تفاصيل الطلب</DialogTitle>
@@ -529,6 +535,10 @@ const MyRequests = () => {
         </DialogContent>
       </Dialog>
     </Box>
+    </div>
+  </div>
+    <Scroll/>
+    
     </>
   );
 };

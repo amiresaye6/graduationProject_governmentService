@@ -1,118 +1,25 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText,
-  DialogTitle, CircularProgress, Box, Typography, List, ListItem, ListItemText,
-  TextField, InputAdornment, Pagination, Stack,
-  Grid
+  Paper, Button, Chip, CircularProgress, Box, Typography,
+  TextField, InputAdornment, Pagination, Stack
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { Close as CloseIcon } from '@mui/icons-material';
-import DownloadIcon from '@mui/icons-material/Download';
-import toast from 'react-hot-toast';
 import { HeaderTemp } from '../Components';
 import { motion } from "framer-motion";
+import Scroll from '../Components/scroll';
 
 export default function Request() {
- 
+  const navigate = useNavigate();
+
  // State hooks
   const [rows, setRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-  const [adminComment, setAdminComment] = useState('');
-  const [open, setOpen] = useState(false);
-  const [refuseDialogOpen, setRefuseDialogOpen] = useState(false);
-  const [refuseReason, setRefuseReason] = useState('');
-  const [scroll, setScroll] = useState('paper');
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [requestFields, setRequestFields] = useState([]);
-  const [requestFiles, setRequestFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(20);
 
-  const descriptionElementRef = useRef(null);
 
-  // جلب بيانات الحقول المرفقة بالطلب  Get Attached Fields
-  const fetchRequestFields = async (fieldId) => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`https://government-services.runasp.net/api/Fields/Attached/Request/${fieldId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-      const data = await response.json();
-      console.log("Fields data:", data);
-      setRequestFields(data || []);
-    } catch (error) {
-      console.error("Error fetching fields:", error);
-      toast.error("حدث خطأ في جلب بيانات الحقول");
-    }
-  };
-
-  // جلب الملفات المرفقة بالطلب  Get Attached Files
-  const fetchRequestFiles = async (id) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`https://government-services.runasp.net/api/Files/Attached/Request/${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-      const data = await response.json();
-      console.log("Files data:", data);
-      setRequestFiles(data || []);
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      toast.error("حدث خطأ في جلب الملفات");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // تحميل الملف   Download Attached File
-  const downloadFile = async (fileId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`https://government-services.runasp.net/api/Files/Attached/Download/${fileId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`فشل تنزيل الملف: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `file-${fileId}`; // يمكن تغيير اسم الملف حسب الحاجة
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success("تم تنزيل الملف بنجاح");
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      toast.error(error.message || "حدث خطأ أثناء تنزيل الملف");
-    }
-  };
  
   const [pageNumber, setPageNumber] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -170,133 +77,11 @@ export default function Request() {
       memoizedFetchRequests(pageNumber);
   }, [pageNumber, memoizedFetchRequests]);
 
-  const handleRefuseDialogOpen = () => {
-    setRefuseDialogOpen(true);
-  };
-
-  const handleRefuseDialogClose = () => {
-    setRefuseDialogOpen(false);
-    setRefuseReason('');
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
   // استدعاء وظيفة جلب الطلبات عند تحميل المكون
   useEffect(() => {
     console.log("Component mounted, fetching requests...");
     memoizedFetchRequests();
   }, [memoizedFetchRequests]);
-
-  // التركيز على وصف نافذة الحوار عند فتحها
-  useEffect(() => {
-    if (open) {
-      const { current: descriptionElement } = descriptionElementRef;
-      if (descriptionElement !== null) {
-        descriptionElement.focus();
-      }
-    }
-  }, [open]);
-
-  // تحديث حالة الطلب مع التعليق    Add Admin Response
-  const updateRequestStatus = async (requestId, requestStatus) => {
-    try {
-      if (!requestId) {
-        toast.error("رقم الطلب غير صالح");
-        return;
-      }
-
-      const token = localStorage.getItem('token');
-      const action = requestStatus === 'مقبول' ? 'Approve' : 'Reject';
-      const responseText = action === 'Approve' ? 'تم اكمال طلبك بنجاح' : refuseReason;
-
-      const response = await fetch('https://government-services.runasp.net/Admin/Response-To-Request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          requestId,
-          responseText,
-          action
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      // تحديث الحالة في واجهة المستخدم
-      setRows(prevRows =>
-        prevRows.map(row =>
-          row.id === requestId
-            ? {
-                ...row,
-                requestStatus,
-                adminComment: responseText
-              }
-            : row
-        )
-      );
-
-      toast.success(`تم ${requestStatus === 'مقبول' ? 'قبول' : 'رفض'} الطلب بنجاح`);
-      handleClose();
-    } catch (error) {
-      console.error("Error updating request status:", error);
-      toast.error(error.message || "حدث خطأ أثناء تحديث حالة الطلب");
-    }
-  };
-
-  // جلب تفاصيل طلب محدد   Get  Member Request By Id
-  const fetchRequestDetails = async (requestId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`https://government-services.runasp.net/api/Requests/${requestId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-      const data = await response.json();
-      console.log("Request details:", data);
-      return data;
-    } catch (error) {
-      console.error("Error fetching request details:", error);
-      return null;
-    }
-  };
-
-  const handleClickOpen = async (request) => {
-    // التحقق من وجود طلب صالح قبل فتح النافذة
-    if (!request) {
-      console.error("Invalid request object", request);
-      toast.error("لا يمكن عرض تفاصيل الطلب. الرجاء المحاولة مرة أخرى.");
-      return;
-    }
-
-    // إعادة تعيين الحالة قبل فتح النافذة
-    setSelectedRequest(request);
-    setError(null);
-    setAdminComment('');
-    setOpen(true);
-    setScroll('paper');
-
-    // جلب تفاصيل الطلب
-    const details = await fetchRequestDetails(request.id);
-    if (details) {
-      console.log("Updated request details:", details);
-      setSelectedRequest(prev => ({ ...prev, ...details }));
-    }
-
-    // جلب البيانات والملفات
-    fetchRequestFields(request.id);
-    fetchRequestFiles(request.id);
-  };
 
   // تحويل حالة الطلب من الإنجليزية إلى العربية
   const mapStatusToArabic = (requestStatus) => {
@@ -329,46 +114,21 @@ export default function Request() {
     }
   };
 
-  // معالجة قيمة الحقل حسب نوعه
-  const processFieldValue = (field) => {
-    if (!field) return '';
-
-    try {
-      switch (field.valueType?.toLowerCase()) {
-        case 'date':
-          return field.fieldValueDate ? new Date(field.fieldValueDate).toLocaleDateString('ar-EG') : '';
-        case 'int':
-          return field.fieldValueInt?.toLocaleString('ar-EG') || '';
-        case 'float':
-          return field.fieldValueFloat?.toLocaleString('ar-EG') || '';
-        case 'string':
-          return field.fieldValueString || '';
-        default:
-          // اختيار القيمة غير الفارغة
-          return field.fieldValueString ||
-                 field.fieldValueInt?.toString() ||
-                 field.fieldValueFloat?.toString() ||
-                 (field.fieldValueDate ? new Date(field.fieldValueDate).toLocaleDateString('ar-EG') : '') ||
-                 '';
-      }
-    } catch (error) {
-      console.error(`Error processing field value: ${field.filedName}`, error);
-      return '';
-    }
-  };
-
   return (
     <>
       
     <HeaderTemp/>
-      <div className="container my-5">
+     <div style={{backgroundColor:'var(--background-default)', minHeight: '100vh' , maxWidth: '100vw', width: '100%', overflow: 'hidden',
+    display: 'flex',
+    justifyContent: 'center',    alignItems: 'center'}} >
+      <div className="container my-5" style={{backgroundColor:'var(--background-paper)',boxShadow: '4px 8px 20px var(--shadow-medium)',borderRadius: '12px',}} >
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
           className="container text-center mb-4"
         >
-          <h2 className=" text-primary mb-4 text-center">الطلبات المقدمه</h2>
+          <h2 className=" text-primary mb-4 text-center" style={{marginTop:'30px'}}>الطلبات المقدمه</h2>
 
           <Box sx={{ display:'flex',  p: 2, direction: 'rtl' }}>
               
@@ -432,7 +192,7 @@ export default function Request() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((row, index) => (
+                {rows.map((row, index) => (
                   <TableRow
                     key={row.id || index}
                     sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}
@@ -453,9 +213,8 @@ export default function Request() {
                         size="small"
                         color="primary"
                         variant="contained"
-                        onClick={() => handleClickOpen(row)}
+                        onClick={() => navigate(`/request-details/${row.id}`)}
                         style={{ marginLeft: 5 }}
-                        disabled={row.requestStatus !== 'قيد الانتظار' && row.requestStatus !== 'مرفوض'}
                       >
                         عرض التفاصيل
                       </Button>
@@ -485,268 +244,10 @@ export default function Request() {
             </Stack>
           </div>
         )}
-        </motion.div> 
+        </motion.div>
       </div>
- <Dialog
-  open={open}
-  onClose={handleClose}
-  scroll={scroll}
-  aria-labelledby="scroll-dialog-title"
-  aria-describedby="scroll-dialog-description"
-  maxWidth="md"
-  fullWidth
->
-  {selectedRequest && (
-    <>
-      <DialogTitle id="scroll-dialog-title" sx={{ fontWeight: 'bold', fontSize: '1.25rem', pb: 0 }}>
-        تفاصيل الطلب
-        <CloseIcon
-          onClick={handleClose}
-          sx={{ position: 'absolute', left: 30, top: 19, cursor: 'pointer' }}
-        />
-      </DialogTitle>
-      <DialogContent dividers={scroll === 'paper'}>
-        <DialogContentText
-          id="scroll-dialog-description"
-          ref={descriptionElementRef}
-          tabIndex={-1}
-          component="div"
-        >
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Box>
-              {/* Service Info */}
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom color='black'>
-                معلومات الطلب
-              </Typography>
-              <Grid container spacing={2} sx={{ mb: 2 }}  >
-                <Grid item xs={6} >
-                  <Typography variant="body2" color="text.secondary">
-                    اسم الخدمة :
-                  </Typography>
-                  <Typography variant="body1" fontWeight="bold" color='black'>
-                    {selectedRequest.serviceName}
-                  </Typography>
-                </Grid>
-                <Grid item xs={3} textAlign="right" mr={6} >
-                  <Typography variant="body2" color="text.secondary">
-                    رقم الطلب :
-                  </Typography>
-                  <Typography variant="body1" fontWeight="bold" color='black'>
-                    {selectedRequest.requestId}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    تاريخ الطلب :
-                  </Typography>
-                  <Typography variant="body1" fontWeight="bold" color='black'>
-                    {selectedRequest.requestDate}
-                  </Typography>
-                </Grid>
-                <Grid item xs={3}  textAlign="right" mr={6} >
-                  <Typography variant="body2" color="text.secondary">
-                    الحالة :
-                  </Typography>
-                  <Chip 
-                    label={selectedRequest.requestStatus}
-                    color={getStatusColor(selectedRequest.requestStatus)}
-                    size="small"
-                    sx={{ mt: 0.5 }}
-                  />
-                </Grid>
-              </Grid>
-
-              {/* Admin Notes */}
-              {selectedRequest.requestStatus === 'مرفوض' && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    ملاحظات الإدارة
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={4}
-                    variant="outlined"
-                    value={adminComment}
-                    onChange={(e) => setAdminComment(e.target.value)}
-                    placeholder="أدخل ملاحظاتك هنا..."
-                    sx={{ mb: 2 }}
-                  />
-                </Box>
-              )}
-
-              {/* Request Fields */}
-              {requestFields.length > 0 && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    البيانات المرفقة
-                  </Typography>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell align="right">اسم الحقل</TableCell>
-                          <TableCell align="right">القيمة</TableCell>
-                          <TableCell align="right">نوع البيانات</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {requestFields.map((field) => (
-                          <TableRow key={field.fieldId}>
-                            <TableCell align="right">{field.filedName}</TableCell>
-                            <TableCell align="right">{processFieldValue(field)}</TableCell>
-                            <TableCell align="right" sx={{ color: 'text.secondary' }}>
-                              {field.htmlType || field.valueType || 'نص'}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
-              )}
-
-              {/* Attached Files */}
-              {requestFiles.length > 0 && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    الملفات المرفقة
-                  </Typography>
-                  <List>
-                    {requestFiles.map((file) => (
-                      <ListItem key={file.id} secondaryAction={
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => downloadFile(file.id)}
-                          startIcon={<DownloadIcon />}
-                        >
-                          تحميل
-                        </Button>
-                      }>
-                        <ListItemText
-                          primary={file.fileName}
-                          secondary={`النوع: ${file.contentType} | الامتداد: ${file.fileExtension}`}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Box>
-              )}
-
-              {(requestFields.length === 0 && requestFiles.length === 0) && (
-                <Typography variant="body2" color="text.secondary" align="center" sx={{ my: 3 }}>
-                  لا توجد بيانات أو ملفات مرفقة لهذا الطلب
-                </Typography>
-              )}
-
-              {error && (
-                <Typography variant="body2" color="error" align="center" sx={{ my: 2 }}>
-                  {error}
-                </Typography>
-              )}
-            </Box>
-          )}
-        </DialogContentText>
-      </DialogContent>
-
-      {/* Actions */}
-      <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
-        <Button onClick={handleClose} variant="outlined">
-          إغلاق
-        </Button>
-        {selectedRequest && (
-          <Box>
-            <Button
-              size="small"
-              color="error"
-              variant="contained"
-              onClick={handleRefuseDialogOpen}
-              disabled={loading}
-              sx={{ mx: 1 }}
-            >
-              {loading ? <CircularProgress size={20} /> : 'رفض'}
-            </Button>
-            <Button
-              size="small"
-              color="success"
-              variant="contained"
-              onClick={() => updateRequestStatus(selectedRequest.id, 'مقبول')}
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={20} /> : 'قبول'}
-            </Button>
-          </Box>
-        )}
-      </DialogActions>
-    </>
-  )}
-</Dialog>
-
-
-      {/* Refuse Dialog */}
-      <Dialog
-        open={refuseDialogOpen}
-        onClose={handleRefuseDialogClose}
-        maxWidth="md"
-        
-        TransitionProps={{
-          timeout: 500,
-          style: {
-            transition: 'all 0.5s ease-in-out'
-          }
-        }}
-        PaperProps={{
-          style: {
-            transform: refuseDialogOpen ? 'scale(1)' : 'scale(0.8)',
-            opacity: refuseDialogOpen ? 1 : 0,
-            transition: 'all 0.5s ease-in-out'
-          }
-        }}
-      >
-        <DialogTitle>هل انت متأكد من رفض الطلب!</DialogTitle>
-        <DialogContent style={{ minWidth: '500px' }} dir="rtl">
-          <DialogContentText dir="rtl">
-            الرجاء إدخال سبب رفض الطلب
-          </DialogContentText >
-          <TextField
-            autoFocus
-            margin="dense"
-            label="سبب الرفض"
-            type="text"
-            fullWidth
-            multiline
-            rows={4}
-            value={refuseReason}
-            onChange={(e) => setRefuseReason(e.target.value)}
-            variant="outlined"
-            dir="rtl"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleRefuseDialogClose} color="primary">
-            إلغاء
-          </Button>
-          <Button 
-            onClick={() => {
-              updateRequestStatus(selectedRequest.id, 'مرفوض');
-              handleRefuseDialogClose();
-            }} 
-            color="error"
-            variant="contained"
-            disabled={!refuseReason.trim()}
-          >
-            تأكيد الرفض
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-     
-
+      </div>
+      <Scroll/>
     </>
   );
 }

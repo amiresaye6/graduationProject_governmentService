@@ -2,26 +2,22 @@ import React from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-rtl/dist/css/bootstrap-rtl.min.css';
 import "bootstrap/dist/js/bootstrap.bundle.min";
-import "./App.css";
+import "./css/App.css";
 
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Home, Login, About, Services, Contact, Request, AdminServices, UserProfile } from './pages';
+import { Home, Login, About, Services, Contact, Request, AdminServices, UserProfile, RequestDetails } from './pages';
 import DynamicForm from "./Components/form";
 import { Toaster } from "react-hot-toast";
 import MyRequests from "./pages/MyRequests";
 import AdminDashboard from "./pages/AdminDashboard";
 import ThemeToggle from "./Components/ThemeToggle";
-import { ThemeProvider } from "./theme/ThemeContext";
-import { CssBaseline, ThemeProvider as MuiThemeProvider, StyledEngineProvider } from "@mui/material";
+import { ThemeProvider } from "./Components/ThemeContext";
 
 function App() {
   return (
-    <StyledEngineProvider injectFirst>
-      <ThemeProvider>
-        <MuiThemeProvider theme={(theme) => theme}>
-          <CssBaseline />
-          <BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
         <Routes>
           <Route path='/' element={<Home/>}/>
           <Route path='/login' element={<Login/>}/>
@@ -29,6 +25,7 @@ function App() {
           <Route path="/Services" element={<Services/>}/>
           <Route path="/contact" element={<Contact/>}/>
           <Route path="/admin/request" element={<Request/>} />
+          <Route path="/request-details/:requestId" element={<RequestDetails/>} />
           <Route path="/Form" element={<DynamicForm/>}/>
           <Route path="/MyRequests" element={<MyRequests/>} />
           <Route path="/admin" element={<AdminDashboard/>} />
@@ -38,9 +35,7 @@ function App() {
         <Toaster position="top-center" reverseOrder={false} />
         <ThemeToggle />
       </BrowserRouter>
-      </MuiThemeProvider>
     </ThemeProvider>
-  </StyledEngineProvider>
   );
 }
 

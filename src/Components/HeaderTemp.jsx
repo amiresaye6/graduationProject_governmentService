@@ -355,49 +355,50 @@ const HeaderTemp = () => {
                                className={({ isActive }) =>
                                     `btn m-2 ${isActive ? 'btn-active' : ''}`
                                 }
-    style={({ isActive }) => {
-        const isHovered = isActive;
-        return {
-            border: isHovered ? '1px solid var(--primary-main)' : '1px solid white',
-            color: isHovered ? 'var(--primary-contrast-text)' : 'white',
-            backgroundColor: isHovered ? 'var(--primary-main)' : 'transparent',
-            transition: 'all 0.3s ease',
-            display: 'inline-flex',
-            alignItems: 'center'
-        };
-    }}
-    onMouseOver={(e) => {
-        if (!e.currentTarget.classList.contains('btn-active')) {
-            e.target.style.backgroundColor = 'var(--primary-main)';
-            e.target.style.color = 'var(--primary-contrast-text)';
-            e.target.style.borderColor = 'var(--primary-main)';
-            const icon = e.target.querySelector('i');
-            if (icon) {
-                icon.style.color = 'var(--primary-contrast-text)';
-            }
-        }
-    }}
-    onMouseOut={(e) => {
-        if (!e.currentTarget.classList.contains('btn-active')) {
-            e.target.style.backgroundColor = 'transparent';
-            e.target.style.color = 'white';
-            e.target.style.borderColor = 'white';
-            const icon = e.target.querySelector('i');
-            if (icon) {
-                icon.style.color = 'white';
-            }
-        }
-    }}
->
-    <i 
-        className="fa fa-sign-in-alt me-2" 
-        style={{ 
-            color: 'inherit',
-            transition: 'color 0.3s ease',
-            pointerEvents: 'none',
-            marginLeft: '8px'
-        }}></i> تسجيل الدخول
-                            </NavLink>
+                        style={({ isActive }) => {
+                        const isHovered = isActive;
+                        return {
+                            border: isHovered ? '1px solid var(--primary-main)' : '1px solid var(--text-secondary)',
+                            color: isHovered ? 'var(--primary-contrast-text)' : 'var(--text-secondary)',
+                            backgroundColor: isHovered ? 'var(--primary-main)' : 'transparent',
+                            transition: 'all 0.3s ease',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            '--icon-color': isHovered ? 'var(--primary-contrast-text)' : 'var(--text-secondary)'
+                        };
+                    }}
+                    onMouseOver={(e) => {
+                        if (!e.currentTarget.classList.contains('btn-active')) {
+                            e.target.style.backgroundColor = 'var(--primary-main)';
+                            e.target.style.color = 'var(--primary-contrast-text)';
+                            e.target.style.borderColor = 'var(--primary-main)';
+                            const icon = e.target.querySelector('i');
+                            if (icon) {
+                                icon.style.color = 'var(--primary-contrast-text)';
+                            }
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (!e.currentTarget.classList.contains('btn-active')) {
+                            e.target.style.backgroundColor = 'transparent';
+                            e.target.style.color = 'var(--text-secondary)';
+                            e.target.style.borderColor = 'var(--text-secondary)';
+                            const icon = e.target.querySelector('i');
+                            if (icon) {
+                                icon.style.color = 'var(--text-secondary)';
+                            }
+                        }
+                    }}
+                >
+                    <i 
+                        className="fa fa-sign-in-alt me-2" 
+                        style={{ 
+                            color: 'var(--icon-color)',
+                            transition: 'color 0.3s ease',
+                            pointerEvents: 'none',
+                            marginLeft: '3px'
+                        }}></i> تسجيل الدخول
+                        </NavLink>
                         ) : (
                             <Dropdown align="end">
                                 <Dropdown.Toggle
@@ -408,7 +409,7 @@ const HeaderTemp = () => {
                                 >
                                     <div className="d-flex align-items-center">
                                         <img
-                                            src="../assets/2.jpg"
+                                            src={require("../assets/2.jpg")}
                                             alt="صورة المستخدم"
                                             className="rounded-circle me-2"
                                             width="40"

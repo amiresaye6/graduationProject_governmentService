@@ -1,6 +1,4 @@
-/* Theme variables are now controlled by MUI Theme Provider */
-/* Dark theme overrides */
-/* Light Theme Variables */
+/* Light Theme Variables - Default theme */
 :root {
   /* Primary Colors - Used for main brand elements, buttons, and navigation */
   --primary-main: #1e40af; /* Government blue - main brand color */
@@ -180,7 +178,7 @@ body {
 }
 /* profile style */
   /* Button styles */
-        /* .btn {
+        .btn {
           background: none;
           border: none;
           cursor: pointer;
@@ -196,7 +194,7 @@ body {
         .btn:hover {
           background-color: var(--bg-secondary);
           color: var(--accent-color);
-        } */
+        }
 
         .btn-edit {
           color: var(--text-muted);
@@ -444,7 +442,7 @@ body {
 /* Hero Section */
 .hero {
     height: 88vh;
-    background-image: url("../public/assets/WhatsApp\ Image\ 2024-12-13\ at\ 7.17.10\ AM.jpeg") !important;
+    background-image: url('../src/assets/WhatsApp\ Image\ 2024-12-13\ at\ 7.17.10\ AM.jpeg') !important;
     background-position: center !important;
     background-repeat: no-repeat;
     background-size: cover;
@@ -489,7 +487,7 @@ body {
 }
 
 .service .img {
-    background-image: url(../public/assets/Image1_8201622134118.png);
+    background-image: url('../src/assets/images.jpg');
     height: 200px;
     width: 200px; 
     background-position: center;
@@ -564,4 +562,18 @@ body {
   font-weight: 600;
   text-align: center;
 }
+.form-onchange {
+  width: '100%';
+  height: '52px';
+  font-size: '16px';
+  padding: '12px 16px';
+  border-radius: '8px';
+  border: '1px solid var(--border-medium)';
+  background-color: 'var(--background-default)';
+  direction: 'rtl';
+  text-align: 'right';
+  outline: 'none';
+ 
+}
+
 
