@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ThemeToggle from "./Components/ThemeToggle";
 import { ThemeProvider } from "./theme/ThemeContext";
 import { CssBaseline, ThemeProvider as MuiThemeProvider, StyledEngineProvider } from "@mui/material";
+import AddServicePage from "./pages/AddServicePage";
 
 function App() {
   return (
@@ -33,6 +34,8 @@ function App() {
           <Route path="/MyRequests" element={<MyRequests/>} />
           <Route path="/admin" element={<AdminDashboard/>} />
           <Route path="/admin/services" element={<AdminServices/>} />
+          <Route path="/admin/services/:id" element={<AddServicePage />} />
+          <Route path="/admin/services/add" element={<AddServicePage />} />
           <Route path="/ProfilePage" element={<UserProfile/>} />
         </Routes>
         <Toaster position="top-center" reverseOrder={false} />
