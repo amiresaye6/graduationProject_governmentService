@@ -8,6 +8,7 @@ export { default as MyRequests } from './MyRequests';
 export { default as Login } from './Login';
 export { default as Auth } from './Login'
 export { default as Request } from './Request';
+export { default as RequestDetails } from './request-details';
 export { default as AdminDashboard } from './AdminDashboard';
 export { default as AdminServices } from './admin-services';
 export {default as UserProfile} from './user-profile';

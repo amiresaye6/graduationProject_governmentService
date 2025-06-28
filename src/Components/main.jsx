@@ -52,18 +52,7 @@ function main(){
                             lineHeight: '1.4',
                             textShadow: '1px 1px 3px rgba(0,0,0,0.5)'
                         }}>الإدارة العامة للخدمات الحكومية الخاصه بالمدينه</h2>
-                        <button style={{
-                            backgroundColor: 'var(--primary-main)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '12px 30px',
-                            borderRadius: '5px',
-                            fontSize: '1.1rem',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.3s ease',
-                            textDecoration: 'none',
-                            marginTop: '1rem'
-                        }}>
+                        <button  className="btn-login">
                             <Link to="/Services" style={{ color: 'white', textDecoration: 'none' }}>دليل الخدمات</Link>
                         </button>
                     </div>

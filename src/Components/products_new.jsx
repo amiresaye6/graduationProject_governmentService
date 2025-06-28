@@ -100,10 +100,10 @@ function Products() {
                 setData(apiData);
 
                 // تحديد فئة افتراضية (خدمات مدنية) بدلاً من عرض جميع الخدمات
-                const civilServices = apiData.filter(service => service.category === "خدمات مدنية");
+                const civilServices = apiData.filter(service => service.category === "الكل");
                 if (civilServices.length > 0) {
                     setFilter(civilServices);
-                    setSelected('civil'); // تحديث الزر المحدد
+                    setSelected('All'); // تحديث الزر المحدد
                 } else {
                     setFilter(apiData);
                 }
