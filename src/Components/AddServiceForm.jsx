@@ -19,8 +19,6 @@ import {
   Upload,
   Trash2,
   Plus,
-  FileText,
-  Paperclip,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -72,7 +70,13 @@ const AddServiceForm = ({
 
   const { time, unit } = parseProcessingTime(initialData?.processingTime);
   const [serviceImage, setServiceImage] = useState(null);
-  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [attachedFiles, setAttachedFiles] = useState(
+    initialData?.files?.map((f, i) => ({
+      id: Date.now() + i,
+      fileName: f.fileName || "",
+      fileType: f.fileType || "",
+    })) || []
+  );
   const [formFields, setFormFields] = useState(
     initialData?.serviceFields?.map((field, i) => ({
       id: Date.now() + i,
@@ -130,21 +134,6 @@ const AddServiceForm = ({
     if (file) setServiceImage(file);
   };
 
-  const handleFileAttach = (e) => {
-    const files = Array.from(e.target.files);
-    const newFiles = files.map((file) => ({
-      id: Date.now() + Math.random(),
-      name: file.name,
-      size: (file.size / (1024 * 1024)).toFixed(1) + " MB",
-      file,
-    }));
-    setAttachedFiles([...attachedFiles, ...newFiles]);
-  };
-
-  const removeFile = (id) => {
-    setAttachedFiles(attachedFiles.filter((file) => file.id !== id));
-  };
-
   const addFormField = () => {
     setFormFields([
       ...formFields,
@@ -163,10 +152,24 @@ const AddServiceForm = ({
       prev.map((field) => (field.id === id ? { ...field, ...changes } : field))
     );
   };
-
+  const handleAddFileField = () => {
+    setAttachedFiles([
+      ...attachedFiles,
+      { id: Date.now(), fileName: "", fileType: "" },
+    ]);
+  };
+  const handleFileChange = (id, key, value) => {
+    setAttachedFiles((prev) =>
+      prev.map((file) => (file.id === id ? { ...file, [key]: value } : file))
+    );
+  };
+  const handleRemoveFile = (id) => {
+    setAttachedFiles(attachedFiles.filter((file) => file.id !== id));
+  };
   const removeFormField = (id) => {
     setFormFields(formFields.filter((field) => field.id !== id));
   };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -217,9 +220,25 @@ const AddServiceForm = ({
         // ✅ 3. تحديث الملفات فقط لو فيها ملفات جديدة فعلًا
         const hasRealFiles = attachedFiles.some((f) => f.file);
         if (!hasRealFiles) {
-          toast.custom(
-            "⚠️ لم يتم إرفاق ملفات جديدة. الملفات القديمة ستظل كما هي."
-          );
+          toast.custom((t) => (
+            <div
+              style={{
+                background: "#fff3cd",
+                color: "#856404",
+                padding: "16px 20px",
+                borderRadius: "8px",
+                border: "1px solid #ffeeba",
+                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                fontSize: "14px",
+                fontWeight: 500,
+                direction: "rtl",
+                maxWidth: "400px",
+                margin: "auto",
+              }}
+            >
+              ⚠️ لم يتم إرفاق ملفات جديدة. الملفات القديمة ستظل كما هي.
+            </div>
+          ));
         } else {
           const fileData = new FormData();
           attachedFiles.forEach((fileObj) => {
@@ -273,8 +292,9 @@ const AddServiceForm = ({
       setIsSubmitting(false);
       return;
     }
-    attachedFiles.forEach((fileObj) => {
-      data.append("Files", fileObj.file); // نفس المفتاح في كل مرة
+    attachedFiles.forEach((fileObj, index) => {
+      data.append(`Files[${index}].FileName`, fileObj.fileName.trim());
+      data.append(`Files[${index}].FileType`, fileObj.fileType.trim());
     });
 
     // ✅ 8: الحقول المطلوبة
@@ -291,7 +311,7 @@ const AddServiceForm = ({
       );
       data.append(`ServiceFields[${index}].HtmlType`, field.type.trim());
     });
-    
+
     // ✅ 9: صورة الخدمة في النهاية
     if (serviceImage) {
       data.append("ServiceImage", serviceImage);
@@ -683,73 +703,87 @@ const AddServiceForm = ({
 
               {/* Attached Files Section */}
               <CardContent>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 600, mb: 3, fontSize: "18px" }}
-                >
-                  الملفات المرفقة
-                </Typography>
-
                 <Box
-                  onClick={() => document.getElementById("uploadFiles").click()}
-                  sx={{
-                    border: "2px dashed #d1d5db",
-                    borderRadius: 2,
-                    py: 2,
-                    textAlign: "center",
-                    cursor: "pointer",
-                    backgroundColor: "#fafbfc",
-                    mb: 3,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
-                  }}
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={2}
                 >
-                  <input
-                    type="file"
-                    id="uploadFiles"
-                    hidden
-                    multiple
-                    onChange={handleFileAttach}
-                  />
-                  <Paperclip size={16} color="#6b7280" />
-                  <Typography sx={{ color: "#6b7280", fontSize: "14px" }}>
-                    إرفاق ملفات
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 600, fontSize: 18 }}
+                  >
+                    الملفات المرفقة
                   </Typography>
-                </Box>
-
-                {attachedFiles.map((file) => (
-                  <Box
-                    key={file.id}
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={handleAddFileField}
                     sx={{
-                      mb: 2,
-                      border: "1px solid #e5e7eb",
+                      fontSize: 14,
+                      textTransform: "none",
                       borderRadius: 1,
-                      p: 2,
                     }}
                   >
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <FileText size={16} color="#dc2626" />
-                      <Box>
-                        <Typography sx={{ fontSize: "14px", fontWeight: 500 }}>
-                          {file.name}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <IconButton
-                      size="small"
-                      onClick={() => removeFile(file.id)}
-                      sx={{ color: "#dc2626" }}
-                    >
-                      <Trash2 size={14} />
-                    </IconButton>
-                  </Box>
-                ))}
+                    إضافة ملف
+                  </Button>
+                </Box>
 
+                {attachedFiles.length === 0 && (
+                  <Typography color="text.secondary" mb={2}>
+                    لم يتم إضافة ملفات بعد
+                  </Typography>
+                )}
+
+                {attachedFiles.map((file, index) => (
+                  <Grid
+                    container
+                    spacing={2}
+                    key={file.id}
+                    sx={{ mb: 2 }}
+                    alignItems="center"
+                  >
+                    <Grid item xs={7}>
+                      <TextField
+                        fullWidth
+                        label={`اسم الملف ${index + 1}`}
+                        value={file.fileName}
+                        onChange={(e) =>
+                          handleFileChange(file.id, "fileName", e.target.value)
+                        }
+                        size="medium"
+                      />
+                    </Grid>
+                    <Grid item xs={4}>
+                      <FormControl fullWidth size="medium">
+                        <InputLabel>نوع الملف</InputLabel>
+                        <Select
+                          value={file.fileType}
+                          label="نوع الملف"
+                          onChange={(e) =>
+                            handleFileChange(
+                              file.id,
+                              "fileType",
+                              e.target.value
+                            )
+                          }
+                        >
+                          <MenuItem value="pdf">pdf</MenuItem>
+                          <MenuItem value="Image">Image</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={1}>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleRemoveFile(file.id)}
+                      >
+                        <Trash2 size={16} />
+                      </IconButton>
+                    </Grid>
+                  </Grid>
+                ))}
                 {/* Action Buttons */}
                 <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
                   <Button
@@ -762,13 +796,6 @@ const AddServiceForm = ({
                     onClick={() => window.history.back()}
                   >
                     إلغاء
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    sx={{ px: 3 }}
-                    onClick={() => toast.success("تم حفظها كمسودة ✅")}
-                  >
-                    حفظ كمسودة
                   </Button>
                   <Button
                     variant="contained"
