@@ -318,7 +318,7 @@ const AdminServices = () => {
                           <TableRow>
                             <TableCell align="right">اسم الخدمة</TableCell>
                             <TableCell align="right">الفئة</TableCell>
-                            <TableCell align="right">الحالة</TableCell>
+                            <TableCell align="right">الرسوم</TableCell>
                             <TableCell align="right">آخر تحديث</TableCell>
                             <TableCell align="right">الإجراءات</TableCell>
                           </TableRow>

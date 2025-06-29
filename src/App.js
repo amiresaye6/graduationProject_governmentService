@@ -11,8 +11,9 @@ import DynamicForm from "./Components/form";
 import { Toaster } from "react-hot-toast";
 import MyRequests from "./pages/MyRequests";
 import AdminDashboard from "./pages/AdminDashboard";
+import AddServicePage from "./pages/AddServicePage";
 import ThemeToggle from "./Components/ThemeToggle";
-import { ThemeProvider } from "./theme/ThemeContext";
+import { ThemeProvider } from "./Components/ThemeContext";
 import { CssBaseline, ThemeProvider as MuiThemeProvider, StyledEngineProvider } from "@mui/material";
 
 function App() {

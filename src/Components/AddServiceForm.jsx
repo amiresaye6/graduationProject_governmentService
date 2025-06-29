@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -11,8 +11,6 @@ import {
   FormControl,
   InputLabel,
   IconButton,
-  Checkbox,
-  FormControlLabel,
   Grid,
   Container,
 } from "@mui/material";
@@ -24,31 +22,107 @@ import {
   FileText,
   Paperclip,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
-const AddServiceForm = () => {
+const AddServiceForm = ({
+  initialData = null,
+  isEdit = false,
+  serviceId = null,
+  onSuccess,
+}) => {
+  const parseProcessingTime = (timeStr = "7 أيام") => {
+    const mapWordsToNumbers = {
+      واحد: "1",
+      واحدة: "1",
+      اثنين: "2",
+      اثنتين: "2",
+      ثلاثة: "3",
+      أسبوع: "7",
+      "أسبوع واحد": "7",
+      أسبوعان: "14",
+    };
+
+    // نظف النص
+    const cleanTime = timeStr.trim();
+
+    // لو فيه رقم في البداية
+    const parts = cleanTime.split(" ");
+    const hasNumber = !isNaN(parts[0]);
+
+    if (hasNumber) {
+      return {
+        time: parts[0],
+        unit: parts[1] || "أيام",
+      };
+    }
+
+    // جرب تطابق مع الكلمات
+    if (mapWordsToNumbers[cleanTime]) {
+      return {
+        time: mapWordsToNumbers[cleanTime],
+        unit: "أيام", // افتراضياً نحول "أسبوعان" إلى "14 أيام"
+      };
+    }
+
+    return {
+      time: "7",
+      unit: "أيام",
+    };
+  };
+
+  const { time, unit } = parseProcessingTime(initialData?.processingTime);
   const [serviceImage, setServiceImage] = useState(null);
   const [attachedFiles, setAttachedFiles] = useState([]);
-  const [formFields, setFormFields] = useState([]);
+  const [formFields, setFormFields] = useState(
+    initialData?.serviceFields?.map((field, i) => ({
+      id: Date.now() + i,
+      type: field.htmlType || "text",
+      label: field.fieldName || "",
+      description: field.description || "",
+      required: false,
+    })) || []
+  );
   const [formData, setFormData] = useState({
-    serviceName: "",
-    serviceDescription: "",
-    department: "",
-    processingTime: "7",
-    processingUnit: "أيام",
-    priority: "عادي",
+    serviceName: initialData?.serviceName || "",
+    serviceDescription: initialData?.serviceDescription || "",
+    department: initialData?.category || "",
+    processingTime: time,
+    processingUnit: unit,
+    fees: initialData?.fee || "",
+    contact: initialData?.contactInfo || "",
   });
 
-  const departments = [
-    "اختر القسم",
-    "وزارة الصحة",
-    "مكتب التراخيص",
-    "وزارة التعليم",
-    "هيئة النقل",
-    "خدمات المرافق",
-  ];
+  const [departments, setDepartments] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const token = localStorage.getItem("token");
+
+      try {
+        const res = await fetch(
+          "https://government-services.runasp.net/api/Services/Category",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          setDepartments(data);
+        }
+      } catch (err) {
+        console.error("فشل في تحميل الأقسام:", err);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
 
   const fieldTypes = ["text", "number", "date"];
-  const priorities = ["عالي", "عادي"];
   const units = ["أيام", "ساعات", "أسابيع"];
 
   const handleImageUpload = (e) => {
@@ -62,6 +136,7 @@ const AddServiceForm = () => {
       id: Date.now() + Math.random(),
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(1) + " MB",
+      file,
     }));
     setAttachedFiles([...attachedFiles, ...newFiles]);
   };
@@ -73,7 +148,13 @@ const AddServiceForm = () => {
   const addFormField = () => {
     setFormFields([
       ...formFields,
-      { id: Date.now(), type: "text", label: "", required: false },
+      {
+        id: Date.now(),
+        type: "text",
+        label: "",
+        description: "",
+        required: false,
+      },
     ]);
   };
 
@@ -86,13 +167,238 @@ const AddServiceForm = () => {
   const removeFormField = (id) => {
     setFormFields(formFields.filter((field) => field.id !== id));
   };
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    const token = localStorage.getItem("token");
+
+    if (isEdit && serviceId) {
+      try {
+        // ✅ 1. تحديث بيانات الخدمة الأساسية
+        await fetch(
+          `https://government-services.runasp.net/api/Services/${serviceId}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              serviceName: formData.serviceName,
+              serviceDescription: formData.serviceDescription,
+              category: formData.department,
+              fee: parseFloat(formData.fees || 0),
+              processingTime: `${formData.processingTime} ${formData.processingUnit}`,
+              contactInfo: formData.contact,
+            }),
+          }
+        );
+
+        // ✅ 2. تحديث الحقول المطلوبة
+        await fetch(
+          `https://government-services.runasp.net/api/Fields/Required/Service/${serviceId}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              serviceFields: formFields.map((field) => ({
+                fieldName: field.label,
+                description: field.description,
+                htmlType: field.type,
+              })),
+            }),
+          }
+        );
+
+        // ✅ 3. تحديث الملفات فقط لو فيها ملفات جديدة فعلًا
+        const hasRealFiles = attachedFiles.some((f) => f.file);
+        if (!hasRealFiles) {
+          toast.custom(
+            "⚠️ لم يتم إرفاق ملفات جديدة. الملفات القديمة ستظل كما هي."
+          );
+        } else {
+          const fileData = new FormData();
+          attachedFiles.forEach((fileObj) => {
+            if (fileObj.file) {
+              fileData.append("newFiles", fileObj.file);
+            }
+          });
+
+          await fetch(
+            `https://government-services.runasp.net/api/Files/Required/Service/${serviceId}`,
+            {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: fileData,
+            }
+          );
+        }
+
+        toast.success("تم تحديث الخدمة بنجاح ✅");
+        onSuccess?.();
+      } catch (err) {
+        console.error("Update Error:", err);
+        toast.error("فشل تعديل الخدمة ❌");
+      } finally {
+        setIsSubmitting(false);
+      }
+
+      return; // علشان ما يكملش كود POST
+    }
+
+    // ===========================
+    // ✅ حالة الإضافة الجديدة (POST)
+    const data = new FormData();
+
+    // ✅ 1–6: البيانات الأساسية أولاً
+    data.append("ServiceName", formData.serviceName);
+    data.append("ServiceDescription", formData.serviceDescription);
+    data.append("Fee", formData.fees || "0");
+    data.append(
+      "ProcessingTime",
+      `${formData.processingTime} ${formData.processingUnit}`
+    );
+    data.append("category", formData.department);
+    data.append("ContactInfo", formData.contact || "");
+
+    // ✅ 7: الملفات المرفقة (لو موجودة)
+    if (attachedFiles.length === 0) {
+      toast.error("يجب إرفاق ملف واحد على الأقل.");
+      setIsSubmitting(false);
+      return;
+    }
+    attachedFiles.forEach((fileObj) => {
+      data.append("Files", fileObj.file); // نفس المفتاح في كل مرة
+    });
+
+    // ✅ 8: الحقول المطلوبة
+    if (formFields.length === 0) {
+      toast.error("يجب إضافة حقل واحد على الأقل في نموذج المواطن.");
+      setIsSubmitting(false);
+      return;
+    }
+    formFields.forEach((field, index) => {
+      data.append(`ServiceFields[${index}].FieldName`, field.label.trim());
+      data.append(
+        `ServiceFields[${index}].Description`,
+        field.description.trim()
+      );
+      data.append(`ServiceFields[${index}].HtmlType`, field.type.trim());
+    });
+    
+    // ✅ 9: صورة الخدمة في النهاية
+    if (serviceImage) {
+      data.append("ServiceImage", serviceImage);
+    }
+
+    try {
+      const response = await fetch(
+        "https://government-services.runasp.net/api/Services",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: data,
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("تمت إضافة الخدمة:", result);
+        toast.success("تم حفظ الخدمة بنجاح ✅");
+        onSuccess?.();
+      } else {
+        const text = await response.text();
+        console.error("خطأ:", text);
+        toast.error("فشل حفظ الخدمة ❌");
+      }
+    } catch (error) {
+      console.error("Exception:", error);
+      toast.error("حدث خطأ أثناء الإرسال ❗");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchRequiredData = async () => {
+      if (!serviceId) return;
+
+      const token = localStorage.getItem("token");
+
+      try {
+        // جلب الحقول المطلوبة
+        const fieldsRes = await fetch(
+          `https://government-services.runasp.net/api/Fields/Required/Service/${serviceId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const fieldsData = await fieldsRes.json();
+
+        if (Array.isArray(fieldsData)) {
+          setFormFields(
+            fieldsData.map((field, index) => ({
+              id: Date.now() + index,
+              type: field.htmlType || "text",
+              label: field.filedName || "",
+              description: field.description || "",
+              required: false,
+            }))
+          );
+        }
+
+        // جلب الملفات المطلوبة
+        const filesRes = await fetch(
+          `https://government-services.runasp.net/api/Files/Required/Service/${serviceId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const filesData = await filesRes.json();
+
+        if (Array.isArray(filesData)) {
+          setAttachedFiles(
+            filesData.map((file, index) => ({
+              id: Date.now() + index,
+              name:
+                file.fileName +
+                (file.fileExtension ? `.${file.fileExtension}` : ""),
+              size: "غير متاح", // لو ما فيش حجم في الريسبونس
+              file: null, // مش هنقدر نرفعها كملف حقيقي
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("حدث خطأ أثناء جلب الحقول أو الملفات:", err);
+      }
+    };
+
+    fetchRequiredData();
+  }, [serviceId]);
 
   return (
     <Box dir="rtl" sx={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
       <Container maxWidth={false} sx={{ py: 3 }}>
         {/* Header */}
         <Box display="flex" alignItems="center" mb={4}>
-          <IconButton sx={{ mr: 2, color: "#666" }}>
+          <IconButton
+            sx={{ mr: 2, color: "#666" }}
+            onClick={() => window.history.back()}
+          >
             <ArrowLeft />
           </IconButton>
           <Box>
@@ -258,7 +564,9 @@ const AddServiceForm = () => {
                 />
 
                 {/* القسم في صف خاص به */}
+                {/* القسم والحقول الإضافية */}
                 <Grid container spacing={2} sx={{ mb: 3 }}>
+                  {/* حقل القسم */}
                   <Grid item xs={12}>
                     <FormControl fullWidth>
                       <InputLabel>القسم</InputLabel>
@@ -272,13 +580,42 @@ const AddServiceForm = () => {
                         }
                         label="القسم"
                       >
+                        <MenuItem value="" disabled>
+                          اختر القسم
+                        </MenuItem>
                         {departments.map((dept, i) => (
-                          <MenuItem value={dept} key={i} disabled={i === 0}>
-                            {dept}
+                          <MenuItem value={dept.category.trim()} key={i}>
+                            {dept.category.trim()}
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
+                  </Grid>
+
+                  {/* حقل الرسوم */}
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="رسوم الخدمة (جنيه مصري)"
+                      placeholder="أدخل قيمة الرسوم"
+                      value={formData.fees || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, fees: e.target.value })
+                      }
+                    />
+                  </Grid>
+
+                  {/* حقل معلومات التواصل */}
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="معلومات التواصل"
+                      placeholder="رقم الهاتف أو البريد الإلكتروني"
+                      value={formData.contact || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, contact: e.target.value })
+                      }
+                    />
                   </Grid>
                 </Grid>
 
@@ -326,7 +663,7 @@ const AddServiceForm = () => {
                   </Grid>
                 </Grid>
 
-                <FormControl fullWidth>
+                {/* <FormControl fullWidth>
                   <InputLabel>الأولوية</InputLabel>
                   <Select
                     value={formData.priority}
@@ -341,7 +678,7 @@ const AddServiceForm = () => {
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
+                </FormControl> */}
               </CardContent>
 
               {/* Attached Files Section */}
@@ -401,12 +738,6 @@ const AddServiceForm = () => {
                         <Typography sx={{ fontSize: "14px", fontWeight: 500 }}>
                           {file.name}
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "#6b7280", fontSize: "12px" }}
-                        >
-                          {file.size}
-                        </Typography>
                       </Box>
                     </Box>
                     <IconButton
@@ -428,14 +759,24 @@ const AddServiceForm = () => {
                       borderColor: "#d1d5db",
                       px: 3,
                     }}
+                    onClick={() => window.history.back()}
                   >
                     إلغاء
                   </Button>
-                  <Button variant="outlined" sx={{ px: 3 }}>
+                  <Button
+                    variant="outlined"
+                    sx={{ px: 3 }}
+                    onClick={() => toast.success("تم حفظها كمسودة ✅")}
+                  >
                     حفظ كمسودة
                   </Button>
-                  <Button variant="contained" sx={{ px: 3 }}>
-                    حفظ الخدمة
+                  <Button
+                    variant="contained"
+                    sx={{ px: 3 }}
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "جارٍ الحفظ..." : "حفظ الخدمة"}
                   </Button>
                 </Box>
               </CardContent>
@@ -577,7 +918,21 @@ const AddServiceForm = () => {
                       sx={{ mb: 3 }}
                     />
 
-                    <FormControlLabel
+                    <TextField
+                      fullWidth
+                      label="وصف الحقل"
+                      placeholder="أدخل الوصف "
+                      value={field.description}
+                      onChange={(e) =>
+                        updateFormField(field.id, {
+                          description: e.target.value,
+                        })
+                      }
+                      size="small"
+                      sx={{ mb: 3 }}
+                    />
+
+                    {/* <FormControlLabel
                       control={
                         <Checkbox
                           checked={field.required}
@@ -594,7 +949,7 @@ const AddServiceForm = () => {
                           حقل مطلوب
                         </Typography>
                       }
-                    />
+                    /> */}
                   </Box>
                 ))}
               </CardContent>
