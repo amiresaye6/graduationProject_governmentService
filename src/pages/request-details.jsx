@@ -41,6 +41,7 @@ export default function RequestDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [adminComment, setAdminComment] = useState("");
+  const [acceptanceComment, setAcceptanceComment] = useState("");
   // State for dialogs
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -189,7 +190,10 @@ export default function RequestDetails() {
 
   // Dialog handlers
   const handleAcceptDialogOpen = () => setAcceptDialogOpen(true);
-  const handleAcceptDialogClose = () => setAcceptDialogOpen(false);
+  const handleAcceptDialogClose = () => {
+    setAcceptDialogOpen(false);
+    setAcceptanceComment("");
+  };
 
   const handleRejectDialogClose = () => {
     setRejectDialogOpen(false);
@@ -197,7 +201,7 @@ export default function RequestDetails() {
   };
 
   // تحديث حالة الطلب مع التعليق    Add Admin Response
-  const updateRequestStatus = async (requestId, requestStatus) => {
+  const updateRequestStatus = async (requestId, requestStatus, comment) => {
     try {
       if (!requestId) {
         toast.error("رقم الطلب غير صالح");
@@ -208,7 +212,7 @@ export default function RequestDetails() {
       const token = localStorage.getItem("token");
       const action = requestStatus === "مقبول" ? "Approve" : "Reject";
       const responseText =
-        action === "Approve" ? "تم اكمال طلبك بنجاح" : rejectionReason; // غيّر من refuseReason إلى rejectionReason
+        comment || (action === "Approve" ? "تم اكمال طلبك بنجاح" : "");
 
       const response = await fetch(
         "https://government-services.runasp.net/Admin/Response-To-Request",
@@ -236,12 +240,15 @@ export default function RequestDetails() {
         adminComment: responseText,
       }));
       setAdminComment(responseText);
+
       toast.success(
         `تم ${requestStatus === "مقبول" ? "قبول" : "رفض"} الطلب بنجاح`
       );
 
       if (requestStatus === "مرفوض") {
-        handleRejectDialogClose(); // غيّر من handleRefuseDialogClose إلى handleRejectDialogClose
+        handleRejectDialogClose();
+      } else {
+        handleAcceptDialogClose();
       }
     } catch (error) {
       console.error("Error updating request status:", error);
@@ -341,8 +348,21 @@ export default function RequestDetails() {
 
   // Action handlers
   const handleAcceptRequest = async () => {
-    await updateRequestStatus(selectedRequest.requestId, "مقبول");
+    if (!acceptanceComment.trim()) {
+      toast.error("الرجاء إدخال ملاحظات القبول");
+      return;
+    }
+    if (!selectedRequest?.requestId) {
+      toast.error("لا يوجد طلب محدد");
+      return;
+    }
+    await updateRequestStatus(
+      selectedRequest.requestId,
+      "مقبول",
+      acceptanceComment
+    );
     setAcceptDialogOpen(false);
+    setAcceptanceComment("");
   };
 
   const handleRejectRequest = async () => {
@@ -350,12 +370,20 @@ export default function RequestDetails() {
       toast.error("الرجاء إدخال سبب الرفض");
       return;
     }
-
-    await updateRequestStatus(selectedRequest.requestId, "مرفوض");
+    if (!selectedRequest?.requestId) {
+      toast.error("لا يوجد طلب محدد");
+      return;
+    }
+    await updateRequestStatus(
+      selectedRequest.requestId,
+      "مرفوض",
+      rejectionReason
+    );
     setAdminComment(rejectionReason);
     setRejectDialogOpen(false);
     setRejectionReason("");
   };
+
   // Helper function to get file icon
   const getFileIcon = (fileName) => {
     const extension = fileName?.split(".").pop()?.toLowerCase();
@@ -686,7 +714,8 @@ export default function RequestDetails() {
                   </Card>
 
                   {/* Admin Notes */}
-                  {selectedRequest.requestStatus === "مرفوض" &&
+                  {(selectedRequest.requestStatus === "مقبول" ||
+                    selectedRequest.requestStatus === "مرفوض") &&
                     adminComment && (
                       <Card sx={{ mb: 3, border: "1px solid #e2e8f0" }}>
                         <Box
@@ -772,7 +801,7 @@ export default function RequestDetails() {
       <Dialog
         open={acceptDialogOpen}
         onClose={handleAcceptDialogClose}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
@@ -821,10 +850,60 @@ export default function RequestDetails() {
         <DialogContent sx={{ direction: "rtl" }}>
           <Typography
             variant="h6"
-            sx={{ textAlign: "center", mb: 3, fontFamily: "Arial, sans-serif" }}
+            sx={{ mb: 3, fontFamily: "Arial, sans-serif" }}
           >
-            هل أنت متأكد من قبول هذا الطلب؟
+            الرجاء تقديم ملاحظات لقبول هذا الطلب. سيتم إرسال هذه الملاحظات
+            للمواطن.
           </Typography>
+
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: "bold",
+                mb: 2,
+                fontFamily: "Arial, sans-serif",
+              }}
+            >
+              ملاحظات القبول
+            </Typography>
+            <TextField
+              multiline
+              rows={4}
+              fullWidth
+              value={acceptanceComment}
+              onChange={(e) => setAcceptanceComment(e.target.value)}
+              placeholder="الرجاء شرح ملاحظات قبول هذا الطلب..."
+              variant="outlined"
+              InputProps={{
+                style: {
+                  direction: "rtl",
+                  fontFamily: "Arial, sans-serif",
+                },
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  "&:hover fieldset": {
+                    borderColor: "success.main",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "success.main",
+                  },
+                },
+              }}
+            />
+            <Typography
+              variant="caption"
+              sx={{
+                color: "grey.600",
+                mt: 1,
+                display: "block",
+                fontFamily: "Arial, sans-serif",
+              }}
+            >
+              سيتم إرسال هذه الرسالة للمتقدم
+            </Typography>
+          </Box>
 
           <Alert severity="info" sx={{ mb: 3, direction: "rtl" }}>
             <Typography sx={{ fontFamily: "Arial, sans-serif" }}>
@@ -855,12 +934,6 @@ export default function RequestDetails() {
             >
               رقم الطلب: #{selectedRequest?.id}
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: "grey.600", fontFamily: "Arial, sans-serif" }}
-            >
-              المتقدم: {selectedRequest?.fullName}
-            </Typography>
           </Paper>
         </DialogContent>
 
@@ -880,7 +953,7 @@ export default function RequestDetails() {
             onClick={handleAcceptRequest}
             variant="contained"
             color="success"
-            disabled={loading}
+            disabled={loading || !acceptanceComment.trim()}
             sx={{
               flex: 1,
               fontFamily: "Arial, sans-serif",
@@ -892,7 +965,7 @@ export default function RequestDetails() {
                 جاري المعالجة...
               </Box>
             ) : (
-              "قبول الطلب"
+              "تأكيد القبول"
             )}
           </Button>
         </DialogActions>
