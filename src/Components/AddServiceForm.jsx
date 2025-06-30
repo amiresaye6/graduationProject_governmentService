@@ -14,12 +14,7 @@ import {
   Grid,
   Container,
 } from "@mui/material";
-import {
-  ArrowLeft,
-  Upload,
-  Trash2,
-  Plus,
-} from "lucide-react";
+import { ArrowLeft, Upload, Trash2, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 
 const AddServiceForm = ({
@@ -217,47 +212,29 @@ const AddServiceForm = ({
           }
         );
 
-        // ✅ 3. تحديث الملفات فقط لو فيها ملفات جديدة فعلًا
-        const hasRealFiles = attachedFiles.some((f) => f.file);
-        if (!hasRealFiles) {
-          toast.custom((t) => (
-            <div
-              style={{
-                background: "#fff3cd",
-                color: "#856404",
-                padding: "16px 20px",
-                borderRadius: "8px",
-                border: "1px solid #ffeeba",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                fontSize: "14px",
-                fontWeight: 500,
-                direction: "rtl",
-                maxWidth: "400px",
-                margin: "auto",
-              }}
-            >
-              ⚠️ لم يتم إرفاق ملفات جديدة. الملفات القديمة ستظل كما هي.
-            </div>
-          ));
-        } else {
-          const fileData = new FormData();
-          attachedFiles.forEach((fileObj) => {
-            if (fileObj.file) {
-              fileData.append("newFiles", fileObj.file);
-            }
-          });
-
-          await fetch(
-            `https://government-services.runasp.net/api/Files/Required/Service/${serviceId}`,
-            {
-              method: "PUT",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              body: fileData,
-            }
-          );
+        // 3. تحديث الملفات المطلوبة (إرسال newFiles كـ JSON)
+        if (attachedFiles.length === 0) {
+          toast.error("يجب إرفاق ملف واحد على الأقل.");
+          setIsSubmitting(false);
+          return;
         }
+
+        const newFiles = attachedFiles.map((fileObj) => ({
+          fileName: fileObj.fileName.trim(),
+          fileType: fileObj.fileType.trim(),
+        }));
+
+        await fetch(
+          `https://government-services.runasp.net/api/Files/Required/Service/${serviceId}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ newFiles }),
+          }
+        );
 
         toast.success("تم تحديث الخدمة بنجاح ✅");
         onSuccess?.();
@@ -268,7 +245,7 @@ const AddServiceForm = ({
         setIsSubmitting(false);
       }
 
-      return; // علشان ما يكملش كود POST
+      return;
     }
 
     // ===========================
@@ -394,11 +371,9 @@ const AddServiceForm = ({
           setAttachedFiles(
             filesData.map((file, index) => ({
               id: Date.now() + index,
-              name:
-                file.fileName +
-                (file.fileExtension ? `.${file.fileExtension}` : ""),
-              size: "غير متاح", // لو ما فيش حجم في الريسبونس
-              file: null, // مش هنقدر نرفعها كملف حقيقي
+              fileName: file.fileName || "",
+              fileType: file.fileType || "",
+              file: null,
             }))
           );
         }
@@ -768,7 +743,7 @@ const AddServiceForm = ({
                             )
                           }
                         >
-                          <MenuItem value="pdf">pdf</MenuItem>
+                          <MenuItem value="pdf">PDF</MenuItem>
                           <MenuItem value="Image">Image</MenuItem>
                         </Select>
                       </FormControl>

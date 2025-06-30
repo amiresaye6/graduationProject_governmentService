@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import HeaderTemp from "../Components/HeaderTemp";
 import { ThemeToggle } from "../Components";
-import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Components/AuthContext";
 import { FaEye, FaEyeSlash, FaLock, FaEnvelope } from 'react-icons/fa';
@@ -82,7 +80,6 @@ const Login = () => {
 
     return (
         <>
-            <HeaderTemp />
             <div style={{ backgroundColor: 'var(--background-default)', width: '100%', minHeight: '100vh' , maxWidth: '100vw',overflow: 'hidden',
                boxSizing: 'border-box'}}>
                 <div className="row justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
