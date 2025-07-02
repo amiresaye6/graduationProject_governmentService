@@ -22,171 +22,142 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+import ToggleOnIcon from "@mui/icons-material/ToggleOn";
+import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 import { HeaderTemp } from "../Components";
 import { motion } from "framer-motion";
 import axiosInstance from "./axiosConfig";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-const generateFakeServices = () => [
-  {
-    id: 1,
-    name: "طلب ترخيص تجاري",
-    category: "التراخيص",
-    status: "نشط",
-    lastUpdated: "15 ديسمبر، 2024",
-  },
-  {
-    id: 2,
-    name: "طلب شهادة صحية",
-    category: "الصحة",
-    status: "نشط",
-    lastUpdated: "12 ديسمبر، 2024",
-  },
-  {
-    id: 3,
-    name: "تسجيل في المدرسة",
-    category: "التعليم",
-    status: "غير نشط",
-    lastUpdated: "10 ديسمبر، 2024",
-  },
-  {
-    id: 4,
-    name: "تصريح وقوف السيارات",
-    category: "النقل",
-    status: "نشط",
-    lastUpdated: "8 ديسمبر، 2024",
-  },
-  {
-    id: 5,
-    name: "طلب توصيل المياه",
-    category: "المرافق",
-    status: "نشط",
-    lastUpdated: "5 ديسمبر، 2024",
-  },
-  {
-    id: 6,
-    name: "طلب رخصة بناء",
-    category: "التراخيص",
-    status: "نشط",
-    lastUpdated: "3 ديسمبر، 2024",
-  },
-  {
-    id: 7,
-    name: "استئناف تقييم الضرائب",
-    category: "المالية",
-    status: "قيد الانتظار",
-    lastUpdated: "1 ديسمبر، 2024",
-  },
-];
-
 const categoryStyles = {
   "السجل المدني": "primary.main",
-  "الصحة": "success.main",
-  "خدمات السفر": "secondary.main",
-  "المالية": "warning.main",
-  "التجارة": "error.main",
+  الصحة: "success.main",
+  السفر: "secondary.main",
+  المالية: "warning.main",
+  التجارة: "error.main",
   "خدمات مدنية": "text.primary",
+  "خدمات المرور": "info.main",
+  النقل: "secondary.main",
+  التراخيص: "info.main",
+  التعليم: "warning.main",
+  المرافق: "success.main",
 };
 
 const statusColors = {
-  نشط: "success.main",
-  "غير نشط": "error.main",
-  "قيد الانتظار": "warning.main",
+  متوفر: "success.main",
+  "غير متوفر": "error.main",
 };
 
 const AdminServices = () => {
-  // const [services, setServices] = useState([]);
-  // const [filteredServices, setFilteredServices] = useState([]);
-  // const [search, setSearch] = useState('');
-  // const [category, setCategory] = useState('جميع الفئات');
-  // const [loading, setLoading] = useState(true);
-  // const [page, setPage] = useState(1);
-  // const itemsPerPage = 5;
-
-  // useEffect(() => {
-  //   setTimeout(() => {
-  //     const fake = generateFakeServices();
-  //     setServices(fake);
-  //     setFilteredServices(fake);
-  //     setLoading(false);
-  //   }, 1000);
-  // }, []);
-
-  // useEffect(() => {
-  //   let filtered = services;
-  //   if (search) {
-  //     filtered = filtered.filter(s => s.name.includes(search));
-  //   }
-  //   if (category !== 'جميع الفئات') {
-  //     filtered = filtered.filter(s => s.category === category);
-  //   }
-  //   setFilteredServices(filtered);
-  //   setPage(1);
-  // }, [search, category, services]);
-
-  // const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
-  // const visible = filteredServices.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-  // const categories = ['جميع الفئات', ...new Set(services.map(s => s.category))];
-
-  // const handleDelete = (id) => {
-  //   setServices(prev => prev.filter(s => s.id !== id));
-  // };
-
   const [services, setServices] = useState([]);
-  const [filteredServices, setFilteredServices] = useState([]);
   const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState(["جميع الفئات"]);
   const [category, setCategory] = useState("جميع الفئات");
+  const [availability, setAvailability] = useState("جميع الطلبات");
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [actualTotalItems, setActualTotalItems] = useState(0);
+  const [isTotalItemsSet, setIsTotalItemsSet] = useState(false);
   const navigate = useNavigate();
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
         setLoading(true);
+        const params = {
+          PageNumber: page,
+          PageSize: itemsPerPage,
+          ServiceName: search || undefined,
+          serviceCategory: category !== "جميع الفئات" ? category : undefined,
+          IsAvailable:
+            availability === "متوفرة"
+              ? true
+              : availability === "غير متوفرة"
+              ? false
+              : undefined,
+        };
         // إذا كان هناك بحث، استخدمه في الاستعلام
         // إذا لم يكن هناك بحث، جلب جميع الخدمات
-        const response = search
-          ? await axiosInstance.get(
-              `/Services/Available?ServiceName=${encodeURIComponent(search)}`
-            )
-          : await axiosInstance.get("/Services/All");
-        setServices(response.data);
-        setFilteredServices(response.data);
+        const response = await axiosInstance.get("/Services/All", { params });
+        const servicesData = Array.isArray(response.data.items)
+          ? response.data.items
+          : [];
+        setServices(servicesData);
+        setTotalPages(response.data.totalPages || 0);
+        if (!isTotalItemsSet && response.data.totalPages > 0) {
+          const lastPageParams = {
+            ...params,
+            PageNumber: response.data.totalPages,
+          };
+          const lastPageResponse = await axiosInstance.get("/Services/All", {
+            params: lastPageParams,
+          });
+          const lastPageServices = Array.isArray(lastPageResponse.data.items)
+            ? lastPageResponse.data.items
+            : [];
+          setActualTotalItems(
+            (response.data.totalPages - 1) * itemsPerPage +
+              lastPageServices.length
+          );
+          setIsTotalItemsSet(true);
+        }
       } catch (error) {
         console.error("فشل في جلب الخدمات:", error);
+        toast.error("فشل في جلب الخدمات");
+        setServices([]);
+        setTotalPages(0);
       } finally {
         setLoading(false);
       }
     };
 
     fetchServices();
-  }, [search]);
+  }, [search, page, category, availability, isTotalItemsSet]);
+
+  // إعادة تعيين الصفحة إلى 1 عند تغيير الفلاتر
+  useEffect(() => {
+    setPage(1);
+  }, [search, category, availability]);
 
   useEffect(() => {
-    let filtered = services;
-    if (category !== "جميع الفئات") {
-      filtered = filtered.filter((s) => s.category === category);
+    const fetchCategories = async () => {
+      try {
+        const response = await axiosInstance.get("/Services/Category");
+        console.log("Categories Response:", response.data);
+        const categoryData = Array.isArray(response.data)
+          ? [
+              "جميع الفئات",
+              ...response.data.map((item) => item.category.trim()),
+            ]
+          : ["جميع الفئات"];
+        setCategories(categoryData);
+      } catch (error) {
+        console.error("فشل في جلب الفئات:", error);
+        toast.error("فشل في جلب الفئات");
+        setCategories(["جميع الفئات"]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const visible = Array.isArray(services) ? services : [];
+  const handleToggle = async (id, currentAvailability) => {
+    try {
+      await axiosInstance.put(`/Services/${id}/Toggle`);
+      setServices((prev) =>
+        prev.map((s) =>
+          s.id === id ? { ...s, isAvailable: !currentAvailability } : s
+        )
+      );
+      toast.success("تم تبديل حالة الخدمة بنجاح");
+    } catch (error) {
+      console.error("فشل في تبديل حالة الخدمة:", error);
+      toast.error("فشل في تبديل حالة الخدمة");
     }
-    setFilteredServices(filtered);
-    setPage(1);
-  }, [category, services]);
-
-  const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
-  const visible = filteredServices.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
-  const categories = [
-    "جميع الفئات",
-    ...new Set(services.map((s) => s.category)),
-  ];
-
-  const handleDelete = (id) => {
-    setServices((prev) => prev.filter((s) => s.id !== id));
   };
 
   return (
@@ -274,6 +245,34 @@ const AdminServices = () => {
                       </MenuItem>
                     ))}
                   </Select>
+                  <Select
+                    value={availability}
+                    onChange={(e) => setAvailability(e.target.value)}
+                    displayEmpty
+                    sx={{
+                      width: 200,
+                      height: 46,
+                      fontWeight: "bold",
+                      borderRadius: "12px",
+                      backgroundColor: "#fff",
+                      mb: 2,
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "12px",
+                      },
+                      "& .MuiOutlinedInput-input": {
+                        fontWeight: "bold",
+                        fontSize: "16px",
+                        padding: "8px",
+                      },
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#ccc",
+                      },
+                    }}
+                  >
+                    <MenuItem value="جميع الطلبات">جميع الطلبات</MenuItem>
+                    <MenuItem value="متوفرة">متوفرة</MenuItem>
+                    <MenuItem value="غير متوفرة">غير متوفرة</MenuItem>
+                  </Select>
                   <Box
                     justifyContent="flex-end"
                     display="flex"
@@ -319,7 +318,8 @@ const AdminServices = () => {
                             <TableCell align="right">اسم الخدمة</TableCell>
                             <TableCell align="right">الفئة</TableCell>
                             <TableCell align="right">الرسوم</TableCell>
-                            <TableCell align="right">آخر تحديث</TableCell>
+                            <TableCell align="right">مدة التنفيذ</TableCell>
+                            <TableCell align="right">التوفر</TableCell>
                             <TableCell align="right">الإجراءات</TableCell>
                           </TableRow>
                         </TableHead>
@@ -339,17 +339,22 @@ const AdminServices = () => {
                                   {service.category}
                                 </Typography>
                               </TableCell>
+                              <TableCell align="right">{service.fee}</TableCell>
+                              <TableCell align="right">
+                                {service.processingTime}
+                              </TableCell>
                               <TableCell align="right">
                                 <Typography
                                   color={
-                                    statusColors[service.fee] || "text.primary"
+                                    statusColors[
+                                      service.isAvailable
+                                        ? "متوفر"
+                                        : "غير متوفر"
+                                    ] || "text.primary"
                                   }
                                 >
-                                  {service.fee}$
+                                  {service.isAvailable ? "متوفر" : "غير متوفر"}
                                 </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                {service.processingTime}
                               </TableCell>
                               <TableCell align="right">
                                 <IconButton
@@ -361,10 +366,21 @@ const AdminServices = () => {
                                   <EditIcon size={16} />
                                 </IconButton>
                                 <IconButton
-                                  color="error"
-                                  onClick={() => handleDelete(service.id)}
+                                  color={
+                                    service.isAvailable ? "warning" : "success"
+                                  }
+                                  onClick={() =>
+                                    handleToggle(
+                                      service.id,
+                                      service.isAvailable
+                                    )
+                                  }
                                 >
-                                  <DeleteIcon size={16} />
+                                  {service.isAvailable ? (
+                                    <ToggleOffIcon size={18} />
+                                  ) : (
+                                    <ToggleOnIcon size={18} />
+                                  )}
                                 </IconButton>
                               </TableCell>
                             </TableRow>
@@ -378,17 +394,9 @@ const AdminServices = () => {
                         mt={2}
                       >
                         <Typography variant="body2">
-                          عرض{" "}
-                          {Math.min(
-                            (page - 1) * itemsPerPage + 1,
-                            filteredServices.length
-                          )}{" "}
-                          -
-                          {Math.min(
-                            page * itemsPerPage,
-                            filteredServices.length
-                          )}{" "}
-                          من {filteredServices.length}
+                          عرض {(page - 1) * itemsPerPage + 1} -{" "}
+                          {Math.min(page * itemsPerPage, actualTotalItems)} من{" "}
+                          {actualTotalItems}
                         </Typography>
                         <Pagination
                           count={totalPages}
