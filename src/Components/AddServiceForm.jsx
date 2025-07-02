@@ -65,6 +65,7 @@ const AddServiceForm = ({
 
   const { time, unit } = parseProcessingTime(initialData?.processingTime);
   const [serviceImage, setServiceImage] = useState(null);
+  const [fetchedImageUrl, setFetchedImageUrl] = useState(null); // URL for fetched image
   const [attachedFiles, setAttachedFiles] = useState(
     initialData?.files?.map((f, i) => ({
       id: Date.now() + i,
@@ -126,7 +127,9 @@ const AddServiceForm = ({
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) setServiceImage(file);
+    if (file) {setServiceImage(file);
+      setFetchedImageUrl(null);
+    };
   };
 
   const addFormField = () => {
@@ -235,6 +238,20 @@ const AddServiceForm = ({
             body: JSON.stringify({ newFiles }),
           }
         );
+
+        // Update service image if a new one is uploaded
+        if (serviceImage) {
+          const imageData = new FormData();
+          imageData.append("newImage", serviceImage);
+          await fetch(
+            `https://government-services.runasp.net/api/Files/Image/Service/${serviceId}`,
+            {
+              method: "PUT",
+              headers: { Authorization: `Bearer ${token}` },
+              body: imageData,
+            }
+          );
+        }
 
         toast.success("تم تحديث الخدمة بنجاح ✅");
         onSuccess?.();
@@ -377,13 +394,29 @@ const AddServiceForm = ({
             }))
           );
         }
+        // Fetch service image
+        const imageRes = await fetch(
+         `https://government-services.runasp.net/api/Files/Image/Service/${serviceId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        console.log("Image Response Status:", imageRes.status); // إضافة للتحقق
+        if (imageRes.ok) {
+          const blob = await imageRes.blob();
+          const imageUrl = URL.createObjectURL(blob);
+          console.log("Generated Image URL:", imageUrl); // إضافة للتحقق
+          setFetchedImageUrl(imageUrl);
+        } else {
+          console.error("فشل في جلب صورة الخدمة");
+        }
       } catch (err) {
         console.error("حدث خطأ أثناء جلب الحقول أو الملفات:", err);
       }
     };
 
+    if (isEdit && serviceId) {
     fetchRequiredData();
-  }, [serviceId]);
+  }
+  }, [isEdit, serviceId]);
 
   return (
     <Box dir="rtl" sx={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
@@ -406,13 +439,13 @@ const AddServiceForm = ({
                 mb: 0.5,
               }}
             >
-              خدمة حكومية جديدة
+              {isEdit ? "تعديل الخدمة" : "خدمة حكومية جديدة"}
             </Typography>
             <Typography
               variant="body2"
               sx={{ color: "#666", fontSize: "14px" }}
             >
-              إنشاء خدمة جديدة للمواطنين لطلبها
+              {isEdit ? "تعديل بيانات الخدمة" : "إنشاء خدمة جديدة للمواطنين لطلبها"}
             </Typography>
           </Box>
         </Box>
@@ -438,12 +471,12 @@ const AddServiceForm = ({
                 </Typography>
 
                 {/* عرض صورة الخدمة أو واجهة الرفع */}
-                {serviceImage ? (
+                {(serviceImage || fetchedImageUrl) ? (
                   <Box
                     sx={{ position: "relative", textAlign: "center", py: 2 }}
                   >
                     <img
-                      src={URL.createObjectURL(serviceImage)}
+                      src={serviceImage ? URL.createObjectURL(serviceImage) : fetchedImageUrl}
                       alt="Service"
                       style={{
                         maxWidth: "100%",
@@ -455,7 +488,7 @@ const AddServiceForm = ({
                     />
                     <IconButton
                       size="small"
-                      onClick={() => setServiceImage(null)}
+                      onClick={() => {setServiceImage(null);setFetchedImageUrl(null);}}
                       sx={{
                         position: "absolute",
                         top: 8,

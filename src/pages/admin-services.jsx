@@ -29,6 +29,7 @@ import { motion } from "framer-motion";
 import axiosInstance from "./axiosConfig";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import Scroll from "../Components/scroll";
 
 const categoryStyles = {
   "السجل المدني": "primary.main",
@@ -413,6 +414,7 @@ const AdminServices = () => {
           </Box>
         </motion.div>
       </Box>
+      <Scroll />
     </>
   );
 };
