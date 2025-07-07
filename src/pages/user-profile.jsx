@@ -197,7 +197,7 @@ return (
                 }}
               >
                 <Avatar
-                  src={userData.avatar || require("../assets/2.jpg")}
+                  src={userData.avatar || 'avatar.png'}
                   alt={userData.firstName}
                   sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
                 />
@@ -306,7 +306,7 @@ return (
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Box sx={{ position: 'relative', display: 'inline-block' }}>
             <Avatar
-              src={editData.avatar || require("../assets/2.jpg")}
+              src={editData.avatar || "avatar.png"}
               sx={{ width: 100, height: 100, mx: 'auto', border: '3px solid #1976d2' }}
             />
             <IconButton

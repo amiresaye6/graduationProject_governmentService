@@ -1,7 +1,11 @@
 /* Light Theme Variables - Default theme */
 :root {
   /* Primary Colors - Used for main brand elements, buttons, and navigation */
-  --primary-main: #1e40af; /* Government blue - main brand color */
+  
+  /* --primary-main: #1e40af; Government blue - main brand color */
+  --primary-main: #129990; /* Government blue - main brand color */
+
+  
   --primary-light: #3b82f6; /* Lighter blue for hover states */
   --primary-dark: #1e3a8a; /* Darker blue for active states */
   --primary-contrast-text: #ffffff; /* Text on primary backgrounds */

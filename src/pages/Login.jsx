@@ -209,7 +209,7 @@ const Login = () => {
                             </div>
 
                             {/* <!-- reCAPTCHA --> */}
-                            <div className="mb-4" style={{
+                            {/* <div className="mb-4" style={{
                                 padding: '15px',
                                 borderRadius: '8px',
                                 backgroundColor: 'var(--background-default)',
@@ -247,7 +247,7 @@ const Login = () => {
                                         I'm not a robot
                                     </label>
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* <!-- Submit Button --> */}
                             <div className="text-center p-3">
