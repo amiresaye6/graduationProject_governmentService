@@ -405,7 +405,7 @@ export default function RequestDetails() {
   if (loading) {
     return (
       <>
-        <HeaderTemp />
+        {/* <HeaderTemp /> */}
         <Box
           sx={{
             minHeight: "100vh",
@@ -424,7 +424,7 @@ export default function RequestDetails() {
   if (error) {
     return (
       <>
-        <HeaderTemp />
+        {/* <HeaderTemp /> */}
         <Box sx={{ minHeight: "100vh", backgroundColor: "#f8fafc", py: 4 }}>
           <Container maxWidth="md">
             <Card>
@@ -451,7 +451,7 @@ export default function RequestDetails() {
 
   return (
     <>
-      <HeaderTemp />
+      {/* <HeaderTemp /> */}
       <Box sx={{ minHeight: "100vh", backgroundColor: "#f8fafc" }}>
         {/* Header Section */}
         <Box

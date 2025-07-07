@@ -163,7 +163,7 @@ const AdminServices = () => {
 
   return (
     <>
-      <HeaderTemp />
+      {/* <HeaderTemp /> */}
       <Box dir="rtl" sx={{ minHeight: "100vh", p: 4 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}

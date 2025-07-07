@@ -3,75 +3,45 @@ import { ThemeToggle } from "../Components";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Components/AuthContext";
 import { FaEye, FaEyeSlash, FaLock, FaEnvelope } from 'react-icons/fa';
-// import AdminDashboard from "./AdminDashboard";
 
 const Login = () => {
     const navigate = useNavigate();
-    const { login } = useAuth(); // استخدام useAuth للوصول إلى وظيفة login
+    const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-
-    // حالة لتتبع عملية تسجيل الدخول
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
-    };
+    const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
 
     const handleLogin = async (e) => {
         e.preventDefault();
 
-        // التحقق من صحة المدخلات
         if (!email || !password) {
             setError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
             return;
         }
-
         try {
             setLoading(true);
             setError('');
-
-            // استخدام واجهة برمجة التطبيقات المحددة للمستخدمين العاديين
             const response = await fetch('https://government-services.runasp.net/Auth/Login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
-
             const data = await response.json();
-            console.log('Login Response:', data);
-
             if (response.ok) {
-                // ✅ تسجيل الدخول ناجح
-                console.log('Login Success:', data);
-
-                // تخزين بيانات المستخدم في localStorage
-                localStorage.setItem('userName', data.userName || 'مستخدم النظام');
+                localStorage.setItem('userName', data.firstName || 'مستخدم النظام');
                 localStorage.setItem('userEmail', email);
-                localStorage.setItem('userId', data.userId || 'user_' + Date.now());
-
-                // تخزين التوكن
+                localStorage.setItem('userId', data.adminID || 'user_' + Date.now());
                 localStorage.setItem('token', data.token);
-
-                // تخزين معلومات إضافية إذا كانت متوفرة
-                if (data.userRole) localStorage.setItem('userRole', data.userRole);
-                if (data.userPhone) localStorage.setItem('userPhone', data.userPhone);
-
-                // تحديث حالة المصادقة
-                login(); // استدعاء وظيفة login من AuthContext
-
-                // الانتقال إلى صفحة الخدمات
+                login();
                 navigate("/admin");
             } else {
-                // ❌ بيانات خاطئة أو خطأ من السيرفر
                 setError(data.message || 'فشل تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.');
             }
         } catch (error) {
-            console.error('Login error:', error);
             setError('خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقًا.');
         } finally {
             setLoading(false);
@@ -80,207 +50,208 @@ const Login = () => {
 
     return (
         <>
-            <div style={{ backgroundColor: 'var(--background-default)', width: '100%', minHeight: '100vh' , maxWidth: '100vw',overflow: 'hidden',
-               boxSizing: 'border-box'}}>
-                <div className="row justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-                    {/* <!-- Welcome Section --> */}
-                    <div className="col-md-3 welcome-section">
-                        <h2 style={{ color: 'var(--primary-main)', fontWeight: 'bold', marginBottom: '1rem' }}>مرحباً بك !</h2>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>للإستمتاع بكامل خدمات الإدارة</p>
-                        {/* <Link to="/register" className="text-decoration-none">
-                            <button className="btn-login" style={{ 
-                                backgroundColor: 'var(--primary-main)', 
-                                color: 'var(--primary-contrast-text)',
-                                border: 'none',
-                                padding: '10px 20px',
-                                borderRadius: '8px',
-                                transition: 'all 0.3s ease',
-                                boxShadow: '0 4px 6px var(--shadow-light)'
-                            }}>
-                                انشاء حساب جديد
-                            </button>
-                        </Link> */}
+            <div
+                style={{
+                    backgroundColor: 'var(--background-default)',
+                    minHeight: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 1rem'
+                }}
+            >
+                <div
+                    className="container"
+                    style={{
+                        maxWidth: 960,
+                        width: '100%',
+                        background: 'var(--background-paper)',
+                        borderRadius: 18,
+                        boxShadow: '0 8px 32px var(--shadow-medium)',
+                        padding: '2.5rem 0.5rem',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 0
+                    }}
+                >
+                    {/* Welcome Section */}
+                    <div
+                        className="welcome-section"
+                        style={{
+                            flex: '1 1 320px',
+                            minWidth: 280,
+                            maxWidth: 350,
+                            padding: '1.5rem 2rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderRight: '1px solid var(--border-light)',
+                        }}
+                    >
+                        <h2
+                            style={{
+                                color: 'var(--primary-main)',
+                                fontWeight: 700,
+                                marginBottom: '1rem',
+                                fontSize: '2rem',
+                                letterSpacing: '-0.5px'
+                            }}
+                        >
+                            مرحباً بك !
+                        </h2>
+                        <p style={{
+                            color: 'var(--text-secondary)',
+                            fontSize: '1.1rem',
+                            marginBottom: '2rem',
+                            textAlign: 'center'
+                        }}>
+                            للإستمتاع بكامل خدمات الإدارة
+                        </p>
                     </div>
 
-                    {/* <!-- Login Form Section --> */}
-                    <div className="col-md-4 login-form my-4" style={{
-                        backgroundColor: 'var(--background-paper)',
-                        borderRadius: '15px',
-                        padding: '30px',
-                        boxShadow: '0 8px 20px var(--shadow-medium)',
-                        transition: 'all 0.3s ease',
-                        border: '1px solid var(--border-light)'
-                    }}>
-                        <h3 className="mb-4 text-center" style={{ color: 'var(--primary-main)', fontWeight: 'bold' }}>تسجيل الدخول</h3>
+                    {/* Login Form Section */}
+                    <div
+                        className="login-form"
+                        style={{
+                            flex: '2 1 400px',
+                            minWidth: 300,
+                            padding: '2rem 2rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <h3
+                            className="mb-4"
+                            style={{
+                                color: 'var(--primary-main)',
+                                fontWeight: 700,
+                                textAlign: 'center',
+                                marginBottom: '1.5rem'
+                            }}
+                        >
+                            تسجيل الدخول
+                        </h3>
 
-                        {/* عرض رسالة الخطأ إذا كانت موجودة */}
+                        {/* Error Message */}
                         {error && (
-                            <div className="alert alert-danger mx-3 mb-4" role="alert" style={{
-                                borderRadius: '8px',
-                                backgroundColor: 'var(--error-light)',
-                                color: 'var(--error-main)',
-                                border: '1px solid var(--error-main)'
-                            }}>
+                            <div
+                                className="alert alert-danger"
+                                role="alert"
+                                aria-live="assertive"
+                                style={{
+                                    borderRadius: 8,
+                                    backgroundColor: 'var(--error-light)',
+                                    color: 'var(--error-main)',
+                                    border: '1px solid var(--error-main)',
+                                    width: '100%',
+                                    marginBottom: 20,
+                                    fontSize: '1rem',
+                                    textAlign: 'center'
+                                }}
+                            >
                                 {error}
                             </div>
                         )}
 
-                        <form id="loginForm" onSubmit={handleLogin}>
-                            <div className="">
-                                <label htmlFor="email" style={{ color: 'var(--text-primary)', fontWeight: '500', marginBottom: '8px' }}>
+                        <form
+                            id="loginForm"
+                            autoComplete="on"
+                            onSubmit={handleLogin}
+                            style={{ width: '100%', maxWidth: 380 }}
+                        >
+                            {/* Email Field */}
+                            <div className="mb-3">
+                                <label htmlFor="email" className="form-label w-100 text-end fw-medium">
                                     البريد الإلكتروني
                                 </label>
-                                <div className="input-group">
-                                    <span className="input-group-text" style={{ 
-                                        backgroundColor: 'var(--background-paper)', 
-                                         borderRadius:'6px',
-                                        borderColor: 'var(--border-medium)'
-                                    }}>
-                                        <FaEnvelope color="var(--primary-main)" />
-                                    </span>
+                                <div className="input-group flex-row-reverse">
                                     <input
                                         type="email"
                                         id="email"
-                                        className="form-control"
+                                        className="form-control text-end"
                                         placeholder="أدخل البريد الإلكتروني"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
                                         disabled={loading}
-                                        style={{ 
-                                             borderRadius:'6px',
-                                            backgroundColor: 'var(--background-paper)',
-                                            color: 'var(--text-secondary)',
-                                            borderColor: 'var(--border-medium)',
-                                            padding: '10px',
-                                            transition: 'all 0.3s ease'
-                                        }}
+                                        autoComplete="email"
+                                        dir="rtl"
                                     />
+                                    <span className="input-group-text bg-white border-start-0">
+                                        <FaEnvelope />
+                                    </span>
                                 </div>
                             </div>
-                            <div className="mb-4">
-                                <label htmlFor="password" style={{ color: 'var(--text-secondary)', fontWeight: '500', marginBottom: '8px' }}>
+
+                            {/* Password Field */}
+                            <div className="mb-3">
+                                <label htmlFor="password" className="form-label w-100 text-end fw-medium">
                                     كلمة المرور
                                 </label>
-                                <div className="input-group">
-                                    <span className="input-group-text" style={{ 
-                                        backgroundColor: 'var(--background-paper)', 
-                                         borderRadius:'6px',
-                                        borderColor: 'var(--border-medium)'
-                                    }}>
-                                        <FaLock color="var(--primary-main)" />
-                                    </span>
+                                <div className="input-group flex-row-reverse">
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         id="password"
-                                        className="form-control"
+                                        className="form-control text-end"
                                         placeholder="أدخل كلمة المرور"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
                                         disabled={loading}
-                                        style={{ 
-                                            // borderRight: '2',
-                                            // borderLeft: '4px',
-                                            backgroundColor: 'var(--background-paper)',
-                                            color: 'var(--text-secondary)',
-                                            borderColor: 'var(--border-medium)',
-                                            padding: '10px',
-                                            transition: 'all 0.3s ease',
-                                            borderRadius:'6px'
-                                        }}
+                                        autoComplete="current-password"
+                                        dir="rtl"
                                     />
-                                    <span 
-                                        className="input-group-text" 
+                                    <span
+                                        className="input-group-text bg-white border-start-0"
+                                        style={{ cursor: 'pointer' }}
                                         onClick={togglePasswordVisibility}
-                                        style={{ 
-                                            cursor: 'pointer', 
-                                            backgroundColor: 'var(--background-paper)',
-                                             borderRadius:'6px',
-                                            borderColor: 'var(--border-medium)'
-                                        }}
                                     >
-                                        {showPassword ? 
-                                            <FaEyeSlash color="var(--text-secondary)" /> : 
-                                            <FaEye color="var(--text-secondary)" />
-                                        }
+                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
                                     </span>
                                 </div>
                             </div>
 
-                            {/* <!-- reCAPTCHA --> */}
-                            {/* <div className="mb-4" style={{
-                                padding: '15px',
-                                borderRadius: '8px',
-                                backgroundColor: 'var(--background-default)',
-                                border: '1px solid var(--border-light)'
-                            }}>
-                                <div className="form-check d-flex align-items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="captcha"
-                                        className="form-check-input"
-                                        required
-                                        disabled={loading}
-                                        style={{ 
-                                            width: '20px', 
-                                            height: '20px',
-                                            borderColor: 'var(--primary-light)',
-                                            marginLeft: '10px'
-                                        }}
-                                    />
-                                    <label 
-                                        htmlFor="captcha" 
-                                        className="form-check-label"
-                                        style={{ 
-                                            color: 'var(--text-primary)',
-                                            fontWeight: '500',
-                                            display: 'flex',
-                                            alignItems: 'center'
-                                        }}
-                                    >
-                                        <img 
-                                            src="https://www.gstatic.com/recaptcha/api2/logo_48.png" 
-                                            alt="reCAPTCHA" 
-                                            style={{ width: '30px', marginLeft: '10px' }}
-                                        />
-                                        I'm not a robot
-                                    </label>
-                                </div>
-                            </div> */}
-
-                            {/* <!-- Submit Button --> */}
-                            <div className="text-center p-3">
+                            {/* Submit Button */}
+                            <div className="text-center p-2">
                                 <button
                                     type="submit"
-                                    className="btn-login text-white"
+                                    className="btn-login"
                                     disabled={loading}
-                                    style={{ 
+                                    style={{
                                         backgroundColor: 'var(--primary-main)',
                                         color: 'var(--primary-contrast-text)',
                                         border: 'none',
-                                        padding: '12px 30px',
-                                        borderRadius: '8px',
-                                        fontWeight: 'bold',
+                                        padding: '12px 0',
+                                        borderRadius: 8,
+                                        fontWeight: 700,
                                         width: '100%',
-                                        transition: 'all 0.3s ease',
-                                        boxShadow: '0 4px 6px var(--shadow-light)'
+                                        fontSize: '1rem',
+                                        transition: 'background 0.2s, box-shadow 0.2s',
+                                        boxShadow: '0 4px 10px var(--shadow-light)',
+                                        outline: 'none'
                                     }}
                                 >
                                     {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
                                 </button>
                             </div>
                         </form>
-                        <div className="text-center mt-4 mb-2">
-                            <a 
-                                href="forget" 
+
+                        <div className="text-center mt-3">
+                            <a
+                                href="forget"
                                 onClick={(e) => e.preventDefault()}
-                                style={{ 
+                                tabIndex={0}
+                                style={{
                                     color: 'var(--primary-main)',
-                                    textDecoration: 'none',
-                                    fontWeight: '500',
-                                    transition: 'all 0.3s ease'
+                                    textDecoration: 'underline',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    transition: 'color 0.2s'
                                 }}
+                                onMouseOver={e => e.currentTarget.style.color = 'var(--primary-dark)'}
+                                onMouseOut={e => e.currentTarget.style.color = 'var(--primary-main)'}
                             >
                                 نسيت كلمة المرور؟
                             </a>
@@ -290,6 +261,7 @@ const Login = () => {
             </div>
             <ThemeToggle />
         </>
-    )
-}
-export default Login
+    );
+};
+
+export default Login;

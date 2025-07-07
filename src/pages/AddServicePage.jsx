@@ -30,7 +30,7 @@ const AddServicePage = () => {
 
   return (
     <>
-      <HeaderTemp />
+      {/* <HeaderTemp /> */}
       <Box
         dir="rtl"
         sx={{ minHeight: "100vh", p: 4, backgroundColor: "#f3f6fd" }}

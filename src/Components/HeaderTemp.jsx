@@ -59,76 +59,7 @@ const HeaderTemp = () => {
 
                 <div className="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul className="navbar-nav m-auto text-center">
-                        {!isAuthenticated ? (
-                            <>
-                                <li className="nav-item">
-                                    <NavLink
-                                        className="btn nav-link"
-                                        to="/"
-                                        style={({ isActive }) => ({
-                                            color: isActive ? 'var(--primary-main)' : 'var(--navbar-text)',
-                                            fontWeight: isActive ? '600' : '400',
-                                            borderBottom: isActive ? '2px solid var(--primary-main)' : 'none'
-                                        })}
-                                    >
-                                        الرئيسية
-                                    </NavLink>
-                                </li>
-                                <li className="nav-item">
-                                    <NavLink
-                                        className="btn nav-link"
-                                        to="/about"
-                                        style={({ isActive }) => ({
-                                            color: isActive ? 'var(--primary-main)' : 'var(--navbar-text)',
-                                            fontWeight: isActive ? '600' : '400',
-                                            borderBottom: isActive ? '2px solid var(--primary-main)' : 'none'
-                                        })}
-                                    >
-                                        عن الإدارة
-                                    </NavLink>
-                                </li>
-                                <li className="nav-item">
-                                    <NavLink
-                                        className="btn nav-link"
-                                        to="/Services"
-                                        style={({ isActive }) => ({
-                                            color: isActive ? 'var(--primary-main)' : 'var(--navbar-text)',
-                                            fontWeight: isActive ? '600' : '400',
-                                            borderBottom: isActive ? '2px solid var(--primary-main)' : 'none'
-                                        })}
-                                    >
-                                        الخدمات
-                                    </NavLink>
-                                </li>
-                                <li className="nav-item">
-                                    <NavLink
-                                        className="btn nav-link"
-                                        to="/contact"
-                                        style={({ isActive }) => ({
-                                            color: isActive ? 'var(--primary-main)' : 'var(--navbar-text)',
-                                            fontWeight: isActive ? '600' : '400',
-                                            borderBottom: isActive ? '2px solid var(--primary-main)' : 'none'
-                                        })}
-                                    >
-                                        إتصل بنا
-                                    </NavLink>
-                                </li>
-                                <li className="nav-item">
-                                    <NavLink
-                                        className="btn nav-link"
-                                        to="/MyRequests"
-                                        style={({ isActive }) => ({
-                                            color: isActive ? 'var(--primary-main)' : 'var(--navbar-text)',
-                                            fontWeight: isActive ? '600' : '400',
-                                            borderBottom: isActive ? '2px solid var(--primary-main)' : 'none'
-                                        })}
-                                    >
-                                        طلباتي
-                                    </NavLink>
-                                </li>
-                            </>
-                        ) : (
-                            // Admin navigation - only showing essential tabs
+                        {isAuthenticated && (
                             <>
                                 <li className="nav-item">
                                     <NavLink
