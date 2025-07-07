@@ -9,7 +9,6 @@ const HeaderTemp = () => {
     const { isAuthenticated, logout, user } = useAuth();
     const [userName, setUserName] = useState("");
     const isAdmin = user?.role === "admin";
-    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -166,7 +165,7 @@ const HeaderTemp = () => {
                                 >
                                     <div className="d-flex align-items-center">
                                         <img
-                                            src='avatar.png'
+                                            src='/avatar.png'
                                             alt="صورة المستخدم"
                                             className="rounded-circle me-2"
                                             width="40"
@@ -181,16 +180,14 @@ const HeaderTemp = () => {
                                 </Dropdown.Toggle>
 
                                 <Dropdown.Menu className="dropdown-menu-end shadow custom-dropdown-menu">
-                                    {!isAdmin && (
-                                        <Dropdown.Item as={NavLink} to="/ProfilePage">
-                                            <i className="fa fa-user me-2"></i> الملف الشخصي
-                                        </Dropdown.Item>
-                                    )}
-                                    {!isAdmin && (
-                                        <Dropdown.Item as={NavLink} to="/admin">
-                                            <i className="fa fa-tachometer-alt me-2"></i> لوحة التحكم
-                                        </Dropdown.Item>
-                                    )}
+
+                                    <Dropdown.Item as={NavLink} to="/ProfilePage">
+                                        <i className="fa fa-user me-2"></i> الملف الشخصي
+                                    </Dropdown.Item>
+                                    <Dropdown.Item as={NavLink} to="/admin">
+                                        <i className="fa fa-tachometer-alt me-2"></i> لوحة التحكم
+                                    </Dropdown.Item>
+
                                     <Dropdown.Divider />
                                     <Dropdown.Item
                                         onClick={() => {
