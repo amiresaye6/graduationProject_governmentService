@@ -330,7 +330,7 @@ const AdminServices = () => {
                               <EditIcon fontSize="small" />
                             </IconButton>
                             <IconButton
-                              color={service.isAvailable ? "warning" : "success"}
+                              color={!service.isAvailable ? "warning" : "success"}
                               onClick={() => handleToggle(service.id, service.isAvailable)}
                               aria-label="تبديل حالة الخدمة"
                             >

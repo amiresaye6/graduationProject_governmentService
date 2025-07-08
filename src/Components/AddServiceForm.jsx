@@ -17,12 +17,9 @@ import {
 import { ArrowLeft, Upload, Trash2, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 
-const AddServiceForm = ({
-  initialData = null,
-  isEdit = false,
-  serviceId = null,
-  onSuccess,
-}) => {
+const AddServiceForm = ({ initialData = null, isEdit = false, serviceId = null, onSuccess }) => {
+  const fileInputRef = React.useRef();
+
   const parseProcessingTime = (timeStr = "7 أيام") => {
     const mapWordsToNumbers = {
       واحد: "1",
@@ -63,14 +60,16 @@ const AddServiceForm = ({
     };
   };
 
+  // console.log("init data", initialData)
+
   const { time, unit } = parseProcessingTime(initialData?.processingTime);
   const [serviceImage, setServiceImage] = useState(null);
   const [fetchedImageUrl, setFetchedImageUrl] = useState(null); // URL for fetched image
   const [attachedFiles, setAttachedFiles] = useState(
-    initialData?.files?.map((f, i) => ({
-      id: Date.now() + i,
+    initialData?.requiredFiles?.map((f, i) => ({
+      id: f.id,
       fileName: f.fileName || "",
-      fileType: f.fileType || "",
+      fileType: f.contentType.split('/')[1] || "",
     })) || []
   );
   const [formFields, setFormFields] = useState(
@@ -122,14 +121,17 @@ const AddServiceForm = ({
     fetchDepartments();
   }, []);
 
+
+
   const fieldTypes = ["text", "number", "date"];
   const units = ["أيام", "ساعات", "أسابيع"];
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {setServiceImage(file);
-      setFetchedImageUrl(null);
-    };
+    if (file) {
+      setServiceImage(file);
+      setFetchedImageUrl(null); // Hide the old fetched preview if replacing
+    }
   };
 
   const addFormField = () => {
@@ -168,157 +170,153 @@ const AddServiceForm = ({
     setFormFields(formFields.filter((field) => field.id !== id));
   };
 
+
+  // update the old submit handler spagetty :<
+
+  const updateService = async (serviceId, token, formData) => {
+    // Update core service data
+    return fetch(
+      `https://government-services.runasp.net/api/Services/${serviceId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          serviceName: formData.serviceName,
+          serviceDescription: formData.serviceDescription,
+          category: formData.department,
+          fee: parseFloat(formData.fees || 0),
+          processingTime: `${formData.processingTime} ${formData.processingUnit}`,
+          contactInfo: formData.contact,
+        }),
+      }
+    );
+  };
+
+  const updateFields = async (serviceId, token, formFields) => {
+    // Update required fields
+    return fetch(
+      `https://government-services.runasp.net/api/Fields/Required/Servcie/${serviceId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          serviceFields: formFields.map((field) => ({
+            fieldName: field.label,
+            description: field.description,
+            htmlType: field.type,
+          })),
+        }),
+      }
+    );
+  };
+
+  const updateFiles = async (serviceId, token, attachedFiles) => {
+    // Update required files
+    const newFiles = attachedFiles.map((fileObj) => ({
+      fileName: fileObj.fileName.trim(),
+      fileType: fileObj.fileType.trim(),
+    }));
+
+    console.log("enw File:", newFiles)
+    return fetch(
+      `https://government-services.runasp.net/api/Files/Required/Servcie/${serviceId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ newFiles }),
+      }
+    );
+  };
+
+  const updateServiceImageAPI = async (serviceId, imageFile, token) => {
+    const formData = new FormData();
+    formData.append("newImage", imageFile, imageFile.name);
+
+    const response = await fetch(
+      `https://government-services.runasp.net/api/Files/Image/Servcie/${serviceId}`,
+      {
+        method: "PUT",
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }
+    );
+    if (!response.ok) throw new Error(await response.text());
+    return response.text();
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     const token = localStorage.getItem("token");
 
-    if (isEdit && serviceId) {
-      try {
-        // ✅ 1. تحديث بيانات الخدمة الأساسية
-        await fetch(
-          `https://government-services.runasp.net/api/Services/${serviceId}`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              serviceName: formData.serviceName,
-              serviceDescription: formData.serviceDescription,
-              category: formData.department,
-              fee: parseFloat(formData.fees || 0),
-              processingTime: `${formData.processingTime} ${formData.processingUnit}`,
-              contactInfo: formData.contact,
-            }),
-          }
-        );
-
-        // ✅ 2. تحديث الحقول المطلوبة
-        await fetch(
-          `https://government-services.runasp.net/api/Fields/Required/Service/${serviceId}`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              serviceFields: formFields.map((field) => ({
-                fieldName: field.label,
-                description: field.description,
-                htmlType: field.type,
-              })),
-            }),
-          }
-        );
-
-        // 3. تحديث الملفات المطلوبة (إرسال newFiles كـ JSON)
-        if (attachedFiles.length === 0) {
-          toast.error("يجب إرفاق ملف واحد على الأقل.");
-          setIsSubmitting(false);
-          return;
-        }
-
-        const newFiles = attachedFiles.map((fileObj) => ({
-          fileName: fileObj.fileName.trim(),
-          fileType: fileObj.fileType.trim(),
-        }));
-
-        await fetch(
-          `https://government-services.runasp.net/api/Files/Required/Service/${serviceId}`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ newFiles }),
-          }
-        );
-
-        // Update service image if a new one is uploaded
-        if (serviceImage) {
-          const imageData = new FormData();
-          imageData.append("newImage", serviceImage);
-          await fetch(
-            `https://government-services.runasp.net/api/Files/Image/Service/${serviceId}`,
-            {
-              method: "PUT",
-              headers: { Authorization: `Bearer ${token}` },
-              body: imageData,
-            }
-          );
-        }
-
-        toast.success("تم تحديث الخدمة بنجاح ✅");
-        onSuccess?.();
-      } catch (err) {
-        console.error("Update Error:", err);
-        toast.error("فشل تعديل الخدمة ❌");
-      } finally {
-        setIsSubmitting(false);
-      }
-
-      return;
-    }
-
-    // ===========================
-    // ✅ حالة الإضافة الجديدة (POST)
-    const data = new FormData();
-
-    // ✅ 1–6: البيانات الأساسية أولاً
-    data.append("ServiceName", formData.serviceName);
-    data.append("ServiceDescription", formData.serviceDescription);
-    data.append("Fee", formData.fees || "0");
-    data.append(
-      "ProcessingTime",
-      `${formData.processingTime} ${formData.processingUnit}`
-    );
-    data.append("category", formData.department);
-    data.append("ContactInfo", formData.contact || "");
-
-    // ✅ 7: الملفات المرفقة (لو موجودة)
+    // Validate attached files
     if (attachedFiles.length === 0) {
       toast.error("يجب إرفاق ملف واحد على الأقل.");
       setIsSubmitting(false);
       return;
     }
-    attachedFiles.forEach((fileObj, index) => {
-      data.append(`Files[${index}].FileName`, fileObj.fileName.trim());
-      data.append(`Files[${index}].FileType`, fileObj.fileType.trim());
-    });
-
-    // ✅ 8: الحقول المطلوبة
-    if (formFields.length === 0) {
+    // Validate fields for add
+    if (!isEdit && formFields.length === 0) {
       toast.error("يجب إضافة حقل واحد على الأقل في نموذج المواطن.");
       setIsSubmitting(false);
       return;
     }
-    formFields.forEach((field, index) => {
-      data.append(`ServiceFields[${index}].FieldName`, field.label.trim());
-      data.append(
-        `ServiceFields[${index}].Description`,
-        field.description.trim()
-      );
-      data.append(`ServiceFields[${index}].HtmlType`, field.type.trim());
-    });
-
-    // ✅ 9: صورة الخدمة في النهاية
-    if (serviceImage) {
-      data.append("ServiceImage", serviceImage);
-    }
 
     try {
+      if (isEdit && serviceId) {
+        await updateService(serviceId, token, formData);
+        await updateFields(serviceId, token, formFields);
+        await updateFiles(serviceId, token, attachedFiles);
+        if (serviceImage) {
+          await updateServiceImageAPI(serviceId, serviceImage, token);
+        }
+        toast.success("تم تحديث الخدمة بنجاح ✅");
+        onSuccess?.();
+        return;
+      }
+
+      // ADD NEW SERVICE
+      const data = new FormData();
+      data.append("ServiceName", formData.serviceName);
+      data.append("ServiceDescription", formData.serviceDescription);
+      data.append("Fee", formData.fees || "0");
+      data.append(
+        "ProcessingTime",
+        `${formData.processingTime} ${formData.processingUnit}`
+      );
+      data.append("category", formData.department);
+      data.append("ContactInfo", formData.contact || "");
+      attachedFiles.forEach((fileObj, index) => {
+        data.append(`Files[${index}].FileName`, fileObj.fileName.trim());
+        data.append(`Files[${index}].FileType`, fileObj.fileType.trim());
+      });
+      formFields.forEach((field, index) => {
+        data.append(`ServiceFields[${index}].FieldName`, field.label.trim());
+        data.append(
+          `ServiceFields[${index}].Description`,
+          field.description.trim()
+        );
+        data.append(`ServiceFields[${index}].HtmlType`, field.type.trim());
+      });
+      if (serviceImage) {
+        data.append("ServiceImage", serviceImage);
+      }
+
       const response = await fetch(
         "https://government-services.runasp.net/api/Services",
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
           body: data,
         }
       );
@@ -333,8 +331,8 @@ const AddServiceForm = ({
         console.error("خطأ:", text);
         toast.error("فشل حفظ الخدمة ❌");
       }
-    } catch (error) {
-      console.error("Exception:", error);
+    } catch (err) {
+      console.error("Update Error:", err);
       toast.error("حدث خطأ أثناء الإرسال ❗");
     } finally {
       setIsSubmitting(false);
@@ -387,16 +385,16 @@ const AddServiceForm = ({
         if (Array.isArray(filesData)) {
           setAttachedFiles(
             filesData.map((file, index) => ({
-              id: Date.now() + index,
+              id: file.id,
               fileName: file.fileName || "",
-              fileType: file.fileType || "",
+              fileType: file.contentType.split('/')[1] || "",
               file: null,
             }))
           );
         }
         // Fetch service image
         const imageRes = await fetch(
-         `https://government-services.runasp.net/api/Files/Image/Service/${serviceId}`,
+          `https://government-services.runasp.net/api/Files/ Image/Download/${serviceId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         console.log("Image Response Status:", imageRes.status); // إضافة للتحقق
@@ -414,9 +412,34 @@ const AddServiceForm = ({
     };
 
     if (isEdit && serviceId) {
-    fetchRequiredData();
-  }
+      fetchRequiredData();
+    }
   }, [isEdit, serviceId]);
+
+  const handleUpdateImage = async () => {
+    if (!serviceImage) {
+      fileInputRef.current?.click();
+      return;
+    }
+    try {
+      toast.loading("جاري تحديث الصورة...");
+      await updateServiceImageAPI(serviceId, serviceImage, localStorage.getItem("token"));
+      toast.dismiss();
+      toast.success("تم تحديث صورة الخدمة بنجاح ✅");
+      setFetchedImageUrl(URL.createObjectURL(serviceImage)); // Show new image preview
+      // Optionally clear the picked image if you want only the fetched to show
+      // setServiceImage(null);
+    } catch (err) {
+      toast.dismiss();
+      toast.error("فشل تحديث الصورة ❌");
+      console.error(err);
+    }
+  };
+
+  const handleDeleteImage = () => {
+    setServiceImage(null);
+    setFetchedImageUrl(null);
+  };
 
   return (
     <Box dir="rtl" sx={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
@@ -450,6 +473,7 @@ const AddServiceForm = ({
           </Box>
         </Box>
 
+        {/*  tryign to solve image update issue. */}
         {/* Main Grid Layout */}
         <Grid container spacing={4}>
           {/* Left Column - Main Form */}
@@ -463,18 +487,11 @@ const AddServiceForm = ({
             >
               {/* Service Image Section */}
               <CardContent sx={{ borderBottom: "1px solid #e1e5e9" }}>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 600, mb: 3, fontSize: "18px" }}
-                >
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, fontSize: "18px" }}>
                   صورة الخدمة
                 </Typography>
-
-                {/* عرض صورة الخدمة أو واجهة الرفع */}
                 {(serviceImage || fetchedImageUrl) ? (
-                  <Box
-                    sx={{ position: "relative", textAlign: "center", py: 2 }}
-                  >
+                  <Box sx={{ position: "relative", textAlign: "center", py: 2 }}>
                     <img
                       src={serviceImage ? URL.createObjectURL(serviceImage) : fetchedImageUrl}
                       alt="Service"
@@ -488,26 +505,43 @@ const AddServiceForm = ({
                     />
                     <IconButton
                       size="small"
-                      onClick={() => {setServiceImage(null);setFetchedImageUrl(null);}}
+                      onClick={handleDeleteImage}
                       sx={{
                         position: "absolute",
                         top: 8,
                         left: 8,
                         backgroundColor: "#fff",
                         boxShadow: "0 0 4px rgba(0,0,0,0.1)",
-                        "&:hover": {
-                          backgroundColor: "#fef2f2",
-                        },
+                        "&:hover": { backgroundColor: "#fef2f2" },
                       }}
                     >
                       <Trash2 size={16} color="#dc2626" />
                     </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={handleUpdateImage}
+                      sx={{
+                        position: "absolute",
+                        top: 8,
+                        left: 40,
+                        backgroundColor: "#fff",
+                        boxShadow: "0 0 4px rgba(0,0,0,0.1)",
+                        "&:hover": { backgroundColor: "#f0fdf4" },
+                      }}
+                    >
+                      <Upload size={16} color="#16a34a" />
+                    </IconButton>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      hidden
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
                   </Box>
                 ) : (
                   <Box
-                    onClick={() =>
-                      document.getElementById("uploadImage").click()
-                    }
+                    onClick={() => fileInputRef.current?.click()}
                     sx={{
                       border: "2px dashed #d1d5db",
                       borderRadius: 2,
@@ -525,7 +559,7 @@ const AddServiceForm = ({
                   >
                     <input
                       type="file"
-                      id="uploadImage"
+                      ref={fileInputRef}
                       hidden
                       accept="image/*"
                       onChange={handleImageUpload}
@@ -761,6 +795,7 @@ const AddServiceForm = ({
                         }
                         size="medium"
                       />
+                      {console.log("file:", file)}
                     </Grid>
                     <Grid item xs={4}>
                       <FormControl fullWidth size="medium">
