@@ -27,7 +27,6 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import ClearIcon from "@mui/icons-material/Clear";
 import toast from "react-hot-toast";
-import { HeaderTemp } from "../Components";
 import { motion } from "framer-motion";
 
 export default function RequestDetails() {
@@ -169,6 +168,8 @@ export default function RequestDetails() {
         return "مقبول";
       case "Rejected":
         return "مرفوض";
+      case "Edited":
+        return "معدلة";
       default:
         return requestStatus;
     }
@@ -749,7 +750,7 @@ export default function RequestDetails() {
                     )}
 
                   {/* Actions */}
-                  {selectedRequest.requestStatus === "قيد الانتظار" && (
+                  {(selectedRequest.requestStatus === "قيد الانتظار" || selectedRequest.requestStatus === "معدلة") && (
                     <Card sx={{ border: "1px solid #e2e8f0" }}>
                       <CardContent sx={{ p: 3 }}>
                         <Box
