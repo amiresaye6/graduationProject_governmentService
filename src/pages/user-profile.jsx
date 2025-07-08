@@ -1,25 +1,17 @@
-
-import { HeaderTemp, ThemeToggle  } from "../Components";
+import React, { useState, useEffect } from 'react';
+import axios from "axios";
+import CloseIcon from '@mui/icons-material/Close';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import { Avatar, Box, Button, DialogActions, IconButton, TextField, Typography, Skeleton, Dialog, DialogTitle, DialogContent, MenuItem } from "@mui/material";
+import { Card, Col, Container, Row } from "react-bootstrap";
+import { Edit } from "@mui/icons-material";
+import { ThemeToggle } from "../Components";
 import Scroll from "../Components/scroll";
 import '../css/App.css';
-import React, { useState, useEffect } from 'react';
 
-import axiosInstance from "./axiosConfig";
-import CloseIcon from '@mui/icons-material/Close'; 
-import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import { Avatar, Box, Button, DialogActions, IconButton, TextField, Typography } from "@mui/material";
-import { Card, Col, Container, Row } from "react-bootstrap";
-import { useThemeContext } from "../Components/ThemeContext";
-import { Close, Edit } from "@mui/icons-material";
-import axios from "axios";
-
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  MenuItem,
-} from '@mui/material';
-
+const PRIMARY_COLOR = "#129990";
+const PRIMARY_COLOR_DARK = "#0f7a6e";
+const PRIMARY_COLOR_LIGHT = "#e8f7f5";
 
 const ProfilePage = () => {
   const [userData, setUserData] = useState({});
@@ -27,467 +19,414 @@ const ProfilePage = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] =useState('');
+  const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
- 
+  const [loading, setLoading] = useState(true);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [isAvatarHovered, setIsAvatarHovered] = useState(false);
 
-const [editData, setEditData] = useState({
-  firstName: '',
-  lastName: '',
-  email: '',
-  phone: '',
-  role: ''
-});
-
- const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token');
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const res = await axios.get('https://government-services.runasp.net/Account/User-Info',
+        setLoading(true);
+        const res = await axios.get('https://government-services.runasp.net/Account/User-Info', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        setUserData(res.data);
+        setFirstName(res.data.firstName);
+        setLastName(res.data.lastName);
+        setEmail(res.data.email || '');
+        setRole(res.data.role || '');
+        setPhone(res.data.phone || '');
+        setLoading(false);
+      } catch (err) {
+        setLoading(false);
+        console.error('Error fetching user info:', err);
+      }
+    };
+    fetchUserInfo();
+  }, [token]);
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await axios.put(
+        'https://government-services.runasp.net/Account/Update-Info',
+        { firstName, lastName },
         {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
         }
-        );
-        setUserData(res.data);
-        setFirstName(res.data.firstName);
-        setLastName(res.data.lastName);
-        // setEmail(res.data.email);
-        // setRole(res.data.role)
-      } catch (err) {
-        console.error('Error fetching user info:', err);
-      }
-    };
-    fetchUserInfo();
-  }, []);
-
-
-  const handleSave = async () => {
-    try {
-      setLoading(true);
-      
-        console.log("Sending data:", { firstName, lastName });
-      const response = await axios.put(
-        'https://government-services.runasp.net/Account/Update-Info',
-         { firstName, lastName  },
-        {
-          headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-       }}
-       
       );
-      console.log("API Response:", response.data);
       alert('تم التحديث بنجاح');
-      setUserData((prev) => ({ ...prev, firstName, lastName  }));
+      setUserData((prev) => ({ ...prev, firstName, lastName }));
       setIsEditing(false);
+      setLoading(false);
     } catch (err) {
-      console.error('Error updating info:', err);
-
-       // طباعة تفاصيل الخطأ
-    if (err.response) {
-      console.error('Error status:', err.response.status);
-      console.error('Error data:', err.response.data);
-      console.error('Error headers:', err.response.headers);
-      console.log('Validation errors:', err.response.data.errors);
-       // عرض رسالة الخطأ للمستخدم
-      alert(`حدث خطأ: ${err.response.data.message || JSON.stringify(err.response.data)}`);
-    } else if (err.request) {
-      // الطلب تم إرساله لكن لم يتم استلام استجابة
-      console.error('Error request:', err.request);
-      alert('لم يتم استلام استجابة من الخادم');
-   } else {
-      // حدث خطأ أثناء إعداد الطلب
-      console.error('Error message:', err.message);
-      alert(`حدث خطأ: ${err.message}`);
+      setLoading(false);
+      if (err.response) {
+        alert(`حدث خطأ: ${err.response.data.message || JSON.stringify(err.response.data)}`);
+      } else if (err.request) {
+        alert('لم يتم استلام استجابة من الخادم');
+      } else {
+        alert(`حدث خطأ: ${err.message}`);
+      }
     }
-    } finally {
-    setLoading(false); // انتهاء التحميل
-  }
   };
+
   const handleInputChange = (field, value) => {
-  if (field === 'firstName') setFirstName(value);
-  else if (field === 'lastName') setLastName(value);
-  else if (field === 'email') setEmail(value);
-  else if (field === 'phone') setPhone(value);
-  else if (field === 'role') setRole(value);
-};
-// const handleInputChange = (field, value) => {
-//   setEditData((prev) => ({
-//     ...prev,
-//     [field]: value
-//   }));
-// };
+    if (field === 'firstName') setFirstName(value);
+    else if (field === 'lastName') setLastName(value);
+    else if (field === 'email') setEmail(value);
+    else if (field === 'phone') setPhone(value);
+    else if (field === 'role') setRole(value);
+    else if (field === 'avatar') setAvatarPreview(value);
+  };
 
-const handleCancel = () => {
-  // إعادة تعيين البيانات إلى القيم الأصلية
-  setFirstName(userData.firstName);
-  setLastName(userData.lastName);
-  // setEmail(userData.email);
-  // setRole(userData.role);
-  setIsEditing(false);
-};
-  //   const handleCancel = () => {
-  //   // Reset editData to original userData
-  //   setEditData({
-  //     firstName: userData.firstName,
-  //     lastName: userData.lastName,
-  //     phone: userData.phone,
-  //     email: userData.email,
-  //     role: userData.role
-  //   });
-  //   setIsEditing(false);
-  // };
+  const handleCancel = () => {
+    setFirstName(userData.firstName || '');
+    setLastName(userData.lastName || '');
+    setIsEditing(false);
+    setAvatarPreview(null);
+  };
 
-return (
+  // Card Styles
+  const cardStyles = {
+    p: { xs: 2, md: 3 },
+    border: `1.5px solid ${PRIMARY_COLOR_LIGHT}`,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+    boxShadow: '0 6px 24px 0 rgba(18,153,144,0.09)'
+  };
+
+  return (
     <>
-      {/* <HeaderTemp /> */}
-
       <Box
         sx={{
           minHeight: '100vh',
-          backgroundColor: 'var(--background-default)',
-          color: 'var(--text-primary)',
+          background: "#fcfefd",
+          color: '#2d393a',
           transition: 'all 0.3s ease',
-          margin:'0px',
-          display: 'flex',
-          justifyContent: 'center',
+          pb: 10,
         }}
       >
-        {/* <Box
+        {/* Banner */}
+        <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            p: 2,
-            borderBottom: '1px solid var(--border-color)',
-            backgroundColor: 'var(--bg-secondary)'
+            width: '100%',
+            py: { xs: 3, md: 5 },
+            background: `linear-gradient(90deg, ${PRIMARY_COLOR} 30%, #13c2b3 100%)`,
+            color: '#fff',
+            textAlign: 'center',
+            borderBottomLeftRadius: { xs: 30, md: 60 },
+            borderBottomRightRadius: { xs: 30, md: 60 },
+            boxShadow: `0 6px 40px 0 rgba(18,153,144,0.18)`,
+            mb: 6,
+            position: 'relative'
           }}
         >
-          <Box display="flex" alignItems="center" gap={2}>
-            <Avatar src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" />
-            <Typography>{userData.firstName}</Typography>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1
+            }}
+          >
+            <Box
+              sx={{
+                transition: "transform 0.25s cubic-bezier(.4,2,.5,.4)",
+                transform: isAvatarHovered ? "scale(1.07) rotate(-4deg)" : "scale(1)",
+                boxShadow: isAvatarHovered ? `0 8px 36px 0 rgba(18,153,144,0.19)` : "0 4px 16px 0 rgba(18,153,144,0.10)",
+                border: `4px solid #fff`,
+                borderRadius: "50%",
+                mb: 1,
+                backgroundColor: PRIMARY_COLOR_LIGHT,
+                width: { xs: 108, md: 132 },
+                height: { xs: 108, md: 132 },
+                overflow: "hidden",
+                position: "relative",
+                cursor: "pointer"
+              }}
+              onMouseEnter={() => setIsAvatarHovered(true)}
+              onMouseLeave={() => setIsAvatarHovered(false)}
+            >
+              <Avatar
+                src={avatarPreview || userData.avatar || "avatar.png"}
+                alt={userData.firstName}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  fontSize: 54,
+                  transition: "all 0.2s"
+                }}
+              />
+            </Box>
+            <Typography variant="h4" fontWeight={900} letterSpacing={1} sx={{ mb: 0.5 }}>
+              {loading ? <Skeleton width={120} /> : `${userData.firstName || ''} ${userData.lastName || ''}`}
+            </Typography>
+            <Typography variant="subtitle1" sx={{ opacity: 0.85 }}>
+              {loading ? <Skeleton width={60} /> : (userData.role || "الدور")}
+            </Typography>
           </Box>
-        </Box> */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0, left: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              background: "radial-gradient(circle at 60% 20%, rgba(255,255,255,0.12) 0%, transparent 80%)"
+            }}
+          />
+        </Box>
 
-        <Container className="mt-8" style={{backgroundColor:'var(--background-paper)', 
-          position: 'absolute',
-          border: '1px solid var(--border-color)',
-          borderRadius: '12px',
-          maxWidth: '95%',
-         
-          padding: '24px', // مسافة داخلية
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          marginTop:'2%'
-        }} >
-          <label  style={{color:'var(--text-primary)', fontSize:'2rem', fontWeight: '600'}}> الملف الشخصي</label>
-          <Row className="gy-4" style={{marginTop: '15px'}}>
-            <Col md={4}>
-              <Box
-                sx={{
-                  p: 3,
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 2,
-                  backgroundColor: 'var(--background-paper)',
-                  textAlign: 'center',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                }}
-              >
-                <Avatar
-                  src={userData.avatar || 'avatar.png'}
-                  alt={userData.firstName}
-                  sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
-                />
-                <Typography variant="h5">{`${userData.firstName} ${userData.lastName}`}</Typography>
-                <Typography variant="body2" color="text.secondary">{userData.role}</Typography>
-              </Box>
-            </Col>
-
-            <Col md={8}>
-              <Box
-                sx={{
-                  p: 3,
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 2,
-                  backgroundColor: 'var(--background-paper)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                }}
-              >
-               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  معلومات شخصية
-                </Typography>
-
-                <Button
-                  variant="outlined"
-                  startIcon={<Edit size={18} style={{ marginLeft: 8 }} />} // كبرنا الأيقونة شوية كمان
-                  onClick={() => setIsEditing(true)}
-                  sx={{
-                    fontSize: '14px',
-                    padding: '8px 15px',
-                    borderRadius: '8px',
-                    textTransform: 'none'
-                  }}
-                >
-                  تعديل
-                </Button>
-              </Box>
-
-                {/* <Row className="gy-4">
-                  <Col md={6}><Typography><b>الاسم الأول:</b> {userData.firstName}</Typography></Col>
-                  <Col md={6}><Typography><b>الاسم الأخير:</b> {userData.lastName}</Typography></Col>
-                  <Col md={6}><Typography><b>البريد الإلكتروني:</b> {userData.email}</Typography></Col>
-                  <Col md={6}><Typography><b>رقم الهاتف:</b> {userData.phone}</Typography></Col>
-                </Row> */}
+        {/* Profile Card */}
+        <Container style={{
+          maxWidth: 900,
+          marginTop: '-64px',
+          marginBottom: '32px',
+          zIndex: 2,
+          position: "relative"
+        }}>
+          <Card style={{
+            ...cardStyles,
+            padding: "32px 20px 28px 20px",
+            borderRadius: 24,
+            border: `1.5px solid ${PRIMARY_COLOR_LIGHT}`,
+            boxShadow: '0 8px 32px 0 rgba(18,153,144,0.12)'
+          }}>
+            <Row className="gy-4" style={{ marginTop: 0 }}>
+              <Col md={12}>
+                <Box sx={{ mb: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    معلومات شخصية
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      background: PRIMARY_COLOR,
+                      fontSize: '15px',
+                      px: 2.5,
+                      py: 1,
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      textTransform: "none",
+                      boxShadow: `0 1px 4px rgba(18,153,144,0.10)`,
+                      "&:hover": { background: PRIMARY_COLOR_DARK }
+                    }}
+                    startIcon={<Edit sx={{ color: "#fff" }} />}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    تعديل
+                  </Button>
+                </Box>
                 <Row className="gy-4" >
                   <Col md={6}>
-                    <Typography variant="subtitle2" className="text-secondary" gutterBottom>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       الاسم الأول:
                     </Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      {userData.firstName}
+                      {loading ? <Skeleton width={60} /> : userData.firstName}
                     </Typography>
                   </Col>
-
                   <Col md={6}>
-                    <Typography variant="subtitle2" className="text-secondary" gutterBottom>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       الاسم الأخير:
                     </Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      {userData.lastName}
+                      {loading ? <Skeleton width={60} /> : userData.lastName}
                     </Typography>
                   </Col>
-
                   <Col md={6}>
-                    <Typography variant="subtitle2" className="text-secondary" gutterBottom>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       البريد الإلكتروني:
                     </Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      {userData.email}
+                      {loading ? <Skeleton width={120} /> : userData.email}
                     </Typography>
                   </Col>
-
                   <Col md={6}>
-                    <Typography variant="subtitle2" className="text-secondary" gutterBottom>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       رقم الهاتف:
                     </Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      01001234565
+                      {loading ? <Skeleton width={90} /> : userData.phone || "غير متوفر"}
                     </Typography>
                   </Col>
-
                   <Col md={6}>
-                    <Typography variant="subtitle2" className="text-secondary" gutterBottom>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       الدور:
                     </Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      {/* {userData.email} */}
-                      Team manager
+                      {loading ? <Skeleton width={70} /> : (userData.role || "غير متوفر")}
                     </Typography>
                   </Col>
                 </Row>
-              </Box>
-            </Col>
-          </Row>
+              </Col>
+            </Row>
+          </Card>
         </Container>
-        
-      <Dialog open={isEditing} onClose={() => setIsEditing(false)} fullWidth maxWidth="sm" >
-      <DialogTitle  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor:'var(--background-default)' }}>
-        <Typography variant="h6">تعديل الملف الشخصي</Typography>
-        <IconButton onClick={() => setIsEditing(false)}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
 
-      <DialogContent sx={{backgroundColor: 'var(--background-default)'}}>
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Box sx={{ position: 'relative', display: 'inline-block' }}>
-            <Avatar
-              src={editData.avatar || "avatar.png"}
-              sx={{ width: 100, height: 100, mx: 'auto', border: '3px solid #1976d2' }}
-            />
-            <IconButton
-              sx={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                bgcolor: 'primary.main',
-                color: '#fff',
-                '&:hover': { bgcolor: 'primary.dark' }
-              }}
-              component="label"
-            >
-              <CameraAltIcon fontSize="small" />
-              <input
-                type="file"
-                hidden
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => handleInputChange('avatar', e.target.result);
-                    reader.readAsDataURL(file);
-                  }
-                }}
-              />
-            </IconButton>
-          </Box>
-        </Box>
-
-        <Box component="form" sx={{ display: 'grid', gap: 2 }}>
-
-          <label className="form-label fw-bold" style={{color:'var(--text-primary)'}}>
-          <span className="text-danger">*</span>
-            الاسم الأول  
-          </label>
-          <input
-           className="form-onchange"
-            type="text"
-            value={firstName}
-            onChange={(e) => handleInputChange('firstName', e.target.value)}
-              
-          />
-         
-          <label className="form-label fw-bold" style={{color:'var(--text-primary)'}}>
-          <span className="text-danger">*</span>
-          الاسم الاخير   
-          </label>
-          <input
-          className="form-onchange"
-            type="text"
-            value={lastName}
-            onChange={(e) => handleInputChange('lastName', e.target.value)}
-           
-          />
-          <label className="form-label fw-bold" style={{color:'var(--text-primary)'}}>
-          <span className="text-danger">*</span>
-          البريد الإلكتروني  
-          </label>
-          <input
-          className="form-onchange"
-            type="text"
-            // value={email}
-            // onChange={(e) => handleInputChange('email', e.target.value)}
-            value={userData.email || ''}
-            disabled
-          />
-          <label className="form-label fw-bold" style={{color:'var(--text-primary)'}}>
-          <span className="text-danger">*</span>
-          رقم الهاتف 
-          </label>
-          <input
-          className="form-onchange"
-            type="int"
-            // value={phone}
-            // onChange={(e) => handleInputChange('phone', e.target.value)}
-             value={"01001234565"}
-             disabled
-          />
-
-          <label className="form-label fw-bold" style={{color:'var(--text-primary)'}}>
-          <span className="text-danger">*</span>
-          الدور
-          </label>
-          <select
-          className="form-onchange"
-            type="select"
-            value={role}
-            onChange={(e) => handleInputChange('role', e.target.value)}
-          >    
-            <option value="team-manager" style={{color:'var(--text-primary)'}}>Team Manager</option>
-            <option value="developer" style={{color:'var(--text-primary)'}}>Developer</option>
-            <option value="designer"style={{color:'var(--text-primary)'}}>Designer</option>
-            <option value="analyst"style={{color:'var(--text-primary)'}}>Analyst</option>
-          </select>
-        
-        </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 3 , backgroundColor:'var(--background-default)',boxShadow: '0px 2px 8px var(--shadow-light)' }} dir="rtl">
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSave}
-          disabled={loading}
-        >
-          {/* {loading ? '...جاري الإرسال' : 'إرسال'} */}
-          حفظ
-        </Button>
-        <Button variant="outlined" onClick={handleCancel}  style={{marginRight:10}}>إلغاء</Button>
-      </DialogActions>
-    </Dialog>
-
-        {/* <Modal open={isEditing} onClose={() => setIsEditing(false)}>
-          <Box
+        {/* Edit Dialog */}
+        <Dialog open={isEditing} onClose={() => setIsEditing(false)} fullWidth maxWidth="sm">
+          <DialogTitle
             sx={{
-              backgroundColor: 'var(--bg-card)',
-              p: 4,
-              borderRadius: 2,
-              mx: 'auto',
-              my: '5vh',
-              maxWidth: 500
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#f8fefd'
             }}
           >
-            <Box display="flex" justifyContent="space-between" mb={3}>
-              <Typography variant="h6">تعديل الملف الشخصي</Typography>
-              <IconButton onClick={() => setIsEditing(false)}><Close size={20} /></IconButton>
+            <Typography variant="h6">تعديل الملف الشخصي</Typography>
+            <IconButton onClick={() => setIsEditing(false)}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ backgroundColor: '#f8fefd' }}>
+            <Box sx={{ textAlign: 'center', mb: 3 }}>
+              <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                <Avatar
+                  src={avatarPreview || userData.avatar || "avatar.png"}
+                  sx={{
+                    width: 100, height: 100,
+                    mx: 'auto',
+                    border: `3px solid ${PRIMARY_COLOR}`
+                  }}
+                />
+                <IconButton
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    bgcolor: PRIMARY_COLOR,
+                    color: '#fff',
+                    '&:hover': { bgcolor: PRIMARY_COLOR_DARK }
+                  }}
+                  component="label"
+                >
+                  <CameraAltIcon fontSize="small" />
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => handleInputChange('avatar', ev.target.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </IconButton>
+              </Box>
             </Box>
-
-            <TextField
-              label="الاسم الأول"
-              fullWidth
-              value={editData.firstName}
-              onChange={(e) => handleInputChange('firstName', e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="الاسم الأخير"
-              fullWidth
-              value={editData.lastName}
-              onChange={(e) => handleInputChange('lastName', e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="البريد الإلكتروني"
-              fullWidth
-              value={editData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="رقم الهاتف"
-              fullWidth
-              value={editData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="الدور"
-              fullWidth
-              value={editData.role}
-              onChange={(e) => handleInputChange('role', e.target.value)}
-              sx={{ mb: 2 }}
-            />
-
-            <Box display="flex" justifyContent="flex-end" gap={2}>
-              <Button variant="contained" onClick={handleSave}>حفظ</Button>
-              <Button variant="outlined" onClick={() => setIsEditing(false)}>إلغاء</Button>
+            <Box component="form" sx={{ display: 'grid', gap: 2 }}>
+              <TextField
+                label="الاسم الأول"
+                value={firstName}
+                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                required
+                variant="outlined"
+                fullWidth
+                inputProps={{ style: { direction: 'rtl' } }}
+              />
+              <TextField
+                label="الاسم الأخير"
+                value={lastName}
+                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                required
+                variant="outlined"
+                fullWidth
+                inputProps={{ style: { direction: 'rtl' } }}
+              />
+              <TextField
+                label="البريد الإلكتروني"
+                value={email}
+                onChange={() => { }}
+                disabled
+                variant="outlined"
+                fullWidth
+                inputProps={{ style: { direction: 'rtl' } }}
+              />
+              <TextField
+                label="رقم الهاتف"
+                value={phone}
+                onChange={() => { }}
+                disabled
+                variant="outlined"
+                fullWidth
+                inputProps={{ style: { direction: 'rtl' } }}
+              />
+              <TextField
+                label="الدور"
+                value={role}
+                select
+                onChange={(e) => handleInputChange('role', e.target.value)}
+                fullWidth
+                inputProps={{ style: { direction: 'rtl' } }}
+              >
+                <MenuItem value="team-manager">Team Manager</MenuItem>
+                <MenuItem value="developer">Developer</MenuItem>
+                <MenuItem value="designer">Designer</MenuItem>
+                <MenuItem value="analyst">Analyst</MenuItem>
+              </TextField>
             </Box>
-          </Box>
-        </Modal> */}
+          </DialogContent>
+          <DialogActions sx={{
+            px: 3, pb: 3,
+            backgroundColor: '#f8fefd',
+            boxShadow: '0px 2px 8px #b2dfd6'
+          }} dir="rtl">
+            <Button
+              variant="contained"
+              sx={{
+                background: PRIMARY_COLOR,
+                fontWeight: 600,
+                px: 4,
+                borderRadius: 2,
+                "&:hover": { background: PRIMARY_COLOR_DARK }
+              }}
+              onClick={handleSave}
+              disabled={loading}
+            >
+              {loading ? '...جاري الإرسال' : 'حفظ'}
+            </Button>
+            <Button
+              variant="outlined"
+              sx={{
+                color: PRIMARY_COLOR,
+                borderColor: PRIMARY_COLOR,
+                fontWeight: 600,
+                px: 4,
+                borderRadius: 2,
+                "&:hover": {
+                  background: PRIMARY_COLOR_LIGHT,
+                  borderColor: PRIMARY_COLOR_DARK
+                }
+              }}
+              onClick={handleCancel}
+              style={{ marginRight: 10 }}
+              disabled={loading}
+            >
+              إلغاء
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <ThemeToggle />
+        <Scroll />
       </Box>
-
-      <ThemeToggle />
-      <Scroll />
     </>
-);
+  );
 }
 
 export default ProfilePage;
-
-
-     
