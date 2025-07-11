@@ -15,6 +15,7 @@ import AddServicePage from "./pages/AddServicePage";
 import ThemeToggle from "./Components/ThemeToggle";
 import { ThemeProvider } from "./Components/ThemeContext";
 import { HeaderTemp } from "./Components";
+import ResetPasswordPage from "./pages/Reset";
 // import { CssBaseline, ThemeProvider as MuiThemeProvider, StyledEngineProvider } from "@mui/material";
 
 function AuthRedirect() {
@@ -55,6 +56,7 @@ function App() {
         <Routes>
           {/* <Route path='/' element={<Home/>}/> */}
           <Route path='/login' element={<Login />} />
+          <Route path='/reset' element={<ResetPasswordPage />} />
           {/* <Route path='/about' element={<About/>}/> */}
           {/* <Route path="/Services" element={<Services/>}/> */}
           {/* <Route path="/contact" element={<Contact/>}/> */}

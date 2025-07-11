@@ -106,7 +106,7 @@ const AdminServices = () => {
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState(["جميع الفئات"]);
   const [category, setCategory] = useState("جميع الفئات");
-  const [availability, setAvailability] = useState("جميع الطلبات");
+  const [availability, setAvailability] = useState("جميع الخدمات");
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -257,7 +257,7 @@ const AdminServices = () => {
                 displayEmpty
                 sx={selectSx}
               >
-                <MenuItem value="جميع الطلبات">جميع الطلبات</MenuItem>
+                <MenuItem value="جميع الخدمات">جميع الخدمات</MenuItem>
                 <MenuItem value="متوفرة">متوفرة</MenuItem>
                 <MenuItem value="غير متوفرة">غير متوفرة</MenuItem>
               </Select>

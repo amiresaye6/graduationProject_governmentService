@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ThemeToggle } from "../Components";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../Components/AuthContext";
 import { FaEye, FaEyeSlash, FaLock, FaEnvelope } from 'react-icons/fa';
 
@@ -239,22 +239,9 @@ const Login = () => {
                         </form>
 
                         <div className="text-center mt-3">
-                            <a
-                                href="forget"
-                                onClick={(e) => e.preventDefault()}
-                                tabIndex={0}
-                                style={{
-                                    color: 'var(--primary-main)',
-                                    textDecoration: 'underline',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                    transition: 'color 0.2s'
-                                }}
-                                onMouseOver={e => e.currentTarget.style.color = 'var(--primary-dark)'}
-                                onMouseOut={e => e.currentTarget.style.color = 'var(--primary-main)'}
-                            >
+                            <Link to="/reset">
                                 نسيت كلمة المرور؟
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </div>

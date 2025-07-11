@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import CloseIcon from '@mui/icons-material/Close';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import { Avatar, Box, Button, DialogActions, IconButton, TextField, Typography, Skeleton, Dialog, DialogTitle, DialogContent, MenuItem } from "@mui/material";
+import { Avatar, Box, Button, DialogActions, IconButton, TextField, Typography, Skeleton, Dialog, DialogTitle, DialogContent } from "@mui/material";
 import { Card, Col, Container, Row } from "react-bootstrap";
 import { Edit } from "@mui/icons-material";
 import { ThemeToggle } from "../Components";
@@ -19,11 +19,11 @@ const ProfilePage = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(true);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
+  const [updated, setUpdated] = useState(false);
 
   const token = localStorage.getItem('token');
   useEffect(() => {
@@ -40,30 +40,33 @@ const ProfilePage = () => {
         setFirstName(res.data.firstName);
         setLastName(res.data.lastName);
         setEmail(res.data.email || '');
-        setRole(res.data.role || '');
-        setPhone(res.data.phone || '');
+        setPhone(res.data.phoneNumber || '');
         setLoading(false);
+        console.log(res.data);
+
       } catch (err) {
         setLoading(false);
         console.error('Error fetching user info:', err);
       }
     };
     fetchUserInfo();
-  }, [token]);
+  }, [token, updated]);
 
   const handleSave = async () => {
     try {
       setLoading(true);
       await axios.put(
         'https://government-services.runasp.net/Account/Update-Info',
-        { firstName, lastName },
+        { firstName, lastName, email, phoneNumber: phone },
         {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
         }
-      );
+      ).then(() => {
+        setUpdated(true)
+      });
       alert('تم التحديث بنجاح');
       setUserData((prev) => ({ ...prev, firstName, lastName }));
       setIsEditing(false);
@@ -85,7 +88,6 @@ const ProfilePage = () => {
     else if (field === 'lastName') setLastName(value);
     else if (field === 'email') setEmail(value);
     else if (field === 'phone') setPhone(value);
-    else if (field === 'role') setRole(value);
     else if (field === 'avatar') setAvatarPreview(value);
   };
 
@@ -173,7 +175,7 @@ const ProfilePage = () => {
               {loading ? <Skeleton width={120} /> : `${userData.firstName || ''} ${userData.lastName || ''}`}
             </Typography>
             <Typography variant="subtitle1" sx={{ opacity: 0.85 }}>
-              {loading ? <Skeleton width={60} /> : (userData.role || "الدور")}
+              {loading ? <Skeleton width={60} /> : (userData.roles[0] || "الدور")}
             </Typography>
           </Box>
           <Box
@@ -258,7 +260,7 @@ const ProfilePage = () => {
                       رقم الهاتف:
                     </Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      {loading ? <Skeleton width={90} /> : userData.phone || "غير متوفر"}
+                      {loading ? <Skeleton width={90} /> : userData.phoneNumber || "غير متوفر"}
                     </Typography>
                   </Col>
                   <Col md={6}>
@@ -266,7 +268,7 @@ const ProfilePage = () => {
                       الدور:
                     </Typography>
                     <Typography variant="body1" fontWeight="bold">
-                      {loading ? <Skeleton width={70} /> : (userData.role || "غير متوفر")}
+                      {loading ? <Skeleton width={70} /> : (userData.roles[0] || "غير متوفر")}
                     </Typography>
                   </Col>
                 </Row>
@@ -351,8 +353,7 @@ const ProfilePage = () => {
               <TextField
                 label="البريد الإلكتروني"
                 value={email}
-                onChange={() => { }}
-                disabled
+                onChange={(e) => handleInputChange('email', e.target.value)}
                 variant="outlined"
                 fullWidth
                 inputProps={{ style: { direction: 'rtl' } }}
@@ -360,25 +361,11 @@ const ProfilePage = () => {
               <TextField
                 label="رقم الهاتف"
                 value={phone}
-                onChange={() => { }}
-                disabled
+                onChange={(e) => handleInputChange('phone', e.target.value)}
                 variant="outlined"
                 fullWidth
                 inputProps={{ style: { direction: 'rtl' } }}
               />
-              <TextField
-                label="الدور"
-                value={role}
-                select
-                onChange={(e) => handleInputChange('role', e.target.value)}
-                fullWidth
-                inputProps={{ style: { direction: 'rtl' } }}
-              >
-                <MenuItem value="team-manager">Team Manager</MenuItem>
-                <MenuItem value="developer">Developer</MenuItem>
-                <MenuItem value="designer">Designer</MenuItem>
-                <MenuItem value="analyst">Analyst</MenuItem>
-              </TextField>
             </Box>
           </DialogContent>
           <DialogActions sx={{

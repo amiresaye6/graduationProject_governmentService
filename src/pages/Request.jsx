@@ -16,7 +16,8 @@ import {
   Pagination,
   CircularProgress,
   Fade,
-  Paper,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +27,7 @@ const statusColors = {
   مقبول: "success",
   مرفوض: "error",
   "قيد الانتظار": "warning",
+  "معدلة": "info",
 };
 
 const containerSx = {
@@ -44,7 +46,7 @@ const filterBarSx = {
   mb: 3,
   flexWrap: "wrap",
   alignItems: "center",
-  justifyContent: "flex-end",
+  justifyContent: "flex-start", // Changed to flex-start for RTL layout
 };
 const searchSx = {
   width: 280,
@@ -63,6 +65,23 @@ const searchSx = {
     borderColor: "#ccc",
   },
 };
+const selectSx = {
+  width: 200,
+  fontWeight: "bold",
+  borderRadius: "12px",
+  backgroundColor: "#fff",
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "12px",
+  },
+  "& .MuiOutlinedInput-input": {
+    fontWeight: "bold",
+    fontSize: "16px",
+    padding: "8px",
+  },
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: "#ccc",
+  },
+};
 
 export default function Request() {
   const navigate = useNavigate();
@@ -72,6 +91,11 @@ export default function Request() {
   const [searchQuery, setSearchQuery] = useState('');
   const [pageNumber, setPageNumber] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // Add new filter states
+  const [requestStatus, setRequestStatus] = useState("الكل");
+  const [sortDirection, setSortDirection] = useState("تنازلي");
 
   // تحويل حالة الطلب من الإنجليزية إلى العربية
   const mapStatusToArabic = useCallback((requestStatus) => {
@@ -91,6 +115,24 @@ export default function Request() {
     }
   }, []);
 
+  // تحويل حالة الطلب من العربية إلى الإنجليزية للاستعلام
+  const mapStatusToEnglish = useCallback((arabicStatus) => {
+    switch (arabicStatus) {
+      case 'قيد الانتظار':
+        return 'Pending';
+      case 'مقبول':
+        return 'Approved';
+      case 'مرفوض':
+        return 'Rejected';
+      case 'معدلة':
+        return 'Edited';
+      case 'الكل':
+        return '';
+      default:
+        return '';
+    }
+  }, []);
+
   // جلب الطلبات
   const fetchRequests = useCallback(async (page = 1) => {
     try {
@@ -98,7 +140,27 @@ export default function Request() {
       setFetchError(null);
 
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://government-services.runasp.net/api/Requests/All?pageNumber=${page}`, {
+      const englishStatus = mapStatusToEnglish(requestStatus);
+      const sortParam = sortDirection === "تنازلي" ? "desc" : "asc";
+
+      // بناء رابط الاستعلام مع المعلمات
+      const url = new URL('https://government-services.runasp.net/api/Requests/All');
+      url.searchParams.append('PageNumber', page);
+      url.searchParams.append('PageSize', 10);
+
+      if (searchQuery.trim()) {
+        url.searchParams.append('Search', searchQuery.trim());
+      }
+
+      if (englishStatus) {
+        url.searchParams.append('RequestStatus', englishStatus);
+      }
+
+      url.searchParams.append('SortBy', 'RequestDate');
+      url.searchParams.append('SortDirection', sortParam);
+      url.searchParams.append('onlyEditedAfterRejection', false);
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -109,7 +171,7 @@ export default function Request() {
       if (!response.ok) throw new Error(`API error: ${response.status}`);
 
       const data = await response.json();
-      const formattedData = Array.isArray(data) ? data : (data.items || []);
+      const formattedData = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
 
       const sortedData = formattedData
         .filter(request => request !== null)
@@ -123,38 +185,38 @@ export default function Request() {
           adminComment: request.adminComment || '',
           fullName: `${request.firstName || ''} ${request.lastName || ''}`.trim(),
           fieldValueString: request.fieldValueString || ''
-        }))
-        .sort((a, b) => a.id - b.id);
+        }));
 
       setRows(sortedData);
-      setPageNumber(data.pageNumber || 1);
+      setPageNumber(data.pageNumber || page);
       setTotalPages(data.totalPages || 1);
+      setTotalItems(data.totalCount || formattedData.length);
 
     } catch (error) {
       console.error("Error fetching requests:", error);
       setFetchError("حدث خطأ في جلب البيانات من الخادم");
+      setRows([]);
     } finally {
       setIsLoading(false);
     }
-  }, [mapStatusToArabic]);
+  }, [mapStatusToArabic, mapStatusToEnglish, requestStatus, searchQuery, sortDirection]);
+
+  // إعادة تعيين الصفحة عند تغيير المعلمات
+  useEffect(() => {
+    setPageNumber(1);
+  }, [searchQuery, requestStatus, sortDirection]);
 
   useEffect(() => {
     fetchRequests(pageNumber);
   }, [pageNumber, fetchRequests]);
 
-  // Filtered rows by search query (case-insensitive, RTL safe)
-  const filteredRows = useMemo(() => {
-    if (!searchQuery.trim()) return rows;
-    const lower = searchQuery.trim().toLowerCase();
-    return rows.filter(row =>
-      row.fullName.toLowerCase().includes(lower) ||
-      row.serviceName.toLowerCase().includes(lower)
-    );
-  }, [searchQuery, rows]);
+  // عدد العناصر المعروضة في الصفحة الحالية
+  const startItem = rows.length > 0 ? (pageNumber - 1) * 10 + 1 : 0;
+  const endItem = Math.min(pageNumber * 10, totalItems);
 
   return (
     <>
-      <Box dir="rtl" sx={containerSx}>
+      <Box dir="rtl" sx={{ ...containerSx, direction: 'rtl' }}>
         <Card elevation={6} sx={cardSx}>
           <CardContent>
             <Typography
@@ -165,11 +227,11 @@ export default function Request() {
               textAlign="center"
               sx={{ mb: 3 }}
             >
-              الطلبات المقدمه
+              الطلبات المقدمة
             </Typography>
             <Box sx={filterBarSx}>
               <TextField
-                placeholder="اسم المستخدم أو الخدمة..."
+                placeholder="البحث عن مستخدم، رقم طلب، أو خدمة..."
                 size="small"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -184,6 +246,32 @@ export default function Request() {
                   dir: 'rtl'
                 }}
               />
+              <Select
+                value={requestStatus}
+                onChange={(e) => setRequestStatus(e.target.value)}
+                displayEmpty
+                sx={selectSx}
+                size="small"
+              >
+                <MenuItem value="الكل">جميع الحالات</MenuItem>
+                <MenuItem value="قيد الانتظار">قيد الانتظار</MenuItem>
+                <MenuItem value="مقبول">مقبول</MenuItem>
+                <MenuItem value="مرفوض">مرفوض</MenuItem>
+                <MenuItem value="معدلة">معدلة</MenuItem>
+              </Select>
+              <Select
+                value={sortDirection}
+                onChange={(e) => setSortDirection(e.target.value)}
+                displayEmpty
+                sx={selectSx}
+                size="small"
+              >
+                <MenuItem value="تنازلي">الأحدث أولاً</MenuItem>
+                <MenuItem value="تصاعدي">الأقدم أولاً</MenuItem>
+              </Select>
+
+              {/* Add flex spacer if needed */}
+              <Box sx={{ flexGrow: 1 }} />
             </Box>
             {isLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
@@ -193,7 +281,7 @@ export default function Request() {
               <Box sx={{ textAlign: 'center', color: 'error.main', my: 6 }}>
                 <Typography color="error">{fetchError}</Typography>
               </Box>
-            ) : filteredRows.length === 0 ? (
+            ) : rows.length === 0 ? (
               <Box sx={{ textAlign: 'center', my: 6 }}>
                 <Typography color="text.secondary" fontWeight="medium" fontSize={18}>
                   لا توجد طلبات لعرضها
@@ -214,7 +302,7 @@ export default function Request() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {filteredRows.map((row, index) => (
+                      {rows.map((row, index) => (
                         <TableRow
                           key={row.id || index}
                           sx={{
@@ -251,15 +339,15 @@ export default function Request() {
                   {totalPages > 1 && (
                     <Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
                       <Typography variant="body2">
-                        عرض {(pageNumber - 1) * 10 + 1} -{" "}
-                        {Math.min(pageNumber * 10, filteredRows.length)} من{" "}
-                        {filteredRows.length}
+                        عرض {startItem} - {endItem} من{" "}
+                        {totalItems}
                       </Typography>
                       <Pagination
                         count={totalPages}
                         page={pageNumber}
                         onChange={(event, value) => setPageNumber(value)}
                         color="primary"
+                        dir="ltr" // Ensure pagination controls display correctly
                       />
                     </Box>
                   )}
