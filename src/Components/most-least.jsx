@@ -230,7 +230,7 @@ const DashboardServicesStats = () => {
                  {/* شريط التقدم */}
                   <LinearProgress
                     variant="determinate"
-                    value={(service.requestCount / 20) * 100}
+                    value={(service.requestCount / 70) * 100}
                     sx={{
                         flexGrow: 2,
                         marginLeft: 2,
